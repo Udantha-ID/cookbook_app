@@ -14,8 +14,7 @@ import java.util.List;
 @CrossOrigin //Security Perpose walata use krnne
 public class ReviewController {
 
-//Induru
-    
+    //Anjana
     @Autowired
     private ReviewService reviewService;
 
