@@ -8,6 +8,9 @@ import com.example.backend.service.RecipeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 public class RecipeServiceIMPL implements RecipeService {
 
@@ -28,5 +31,25 @@ public class RecipeServiceIMPL implements RecipeService {
         // recipe.setCreatedDate(new Date());
 
         return recipeRepo.save(recipe);
+    }
+
+    @Override
+    public List<RecipeDTO> getAllRecipes() {
+        List<Recipe> recipes = recipeRepo.findAll();
+
+        List<RecipeDTO> recipeDTOs = new ArrayList<>();
+        for (Recipe recipe : recipes) {
+            RecipeDTO dto = new RecipeDTO();
+            dto.setId(recipe.getId());
+            dto.setTitle(recipe.getTitle());
+            dto.setDescription(recipe.getDescription());
+            dto.setIngredients(recipe.getIngredients());
+            dto.setSteps(recipe.getSteps());
+            dto.setCategory(recipe.getCategory());
+            dto.setRating(recipe.getRating());
+            dto.setMediaUrl(recipe.getMediaUrl());
+            recipeDTOs.add(dto);
+        }
+        return recipeDTOs;
     }
 }

@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("api/v1/recipe")
 @CrossOrigin
@@ -21,6 +23,21 @@ public class RecipeController {
         try {
             Recipe savedRecipe = recipeService.saveRecipe(recipeDTO);
             return new ResponseEntity<>(savedRecipe, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/getAll")
+    public ResponseEntity<List<RecipeDTO>> getAllRecipes() {
+        try {
+            List<RecipeDTO> recipes = recipeService.getAllRecipes();
+
+            if (recipes.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+
+            return new ResponseEntity<>(recipes, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
