@@ -42,4 +42,31 @@ public class RecipeController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Recipe> updateRecipe(@PathVariable("id") Long id, @RequestBody RecipeDTO recipeDTO) {
+        try {
+            Recipe updatedRecipe = recipeService.updateRecipe(id, recipeDTO);
+            if (updatedRecipe != null) {
+                return new ResponseEntity<>(updatedRecipe, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<HttpStatus> deleteRecipe(@PathVariable("id") Long id) {
+        try {
+            boolean isDeleted = recipeService.deleteRecipe(id);
+            if (isDeleted) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

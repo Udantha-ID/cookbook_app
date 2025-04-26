@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class RecipeServiceIMPL implements RecipeService {
@@ -51,5 +52,32 @@ public class RecipeServiceIMPL implements RecipeService {
             recipeDTOs.add(dto);
         }
         return recipeDTOs;
+    }
+    @Override
+    public Recipe updateRecipe(Long id, RecipeDTO recipeDTO) {
+        Optional<Recipe> recipeData = recipeRepo.findById(id);
+
+        if (recipeData.isPresent()) {
+            Recipe recipe = recipeData.get();
+            recipe.setTitle(recipeDTO.getTitle());
+            recipe.setDescription(recipeDTO.getDescription());
+            recipe.setIngredients(recipeDTO.getIngredients());
+            recipe.setSteps(recipeDTO.getSteps());
+            recipe.setCategory(recipeDTO.getCategory());
+            recipe.setRating(recipeDTO.getRating());
+            recipe.setMediaUrl(recipeDTO.getMediaUrl());
+            return recipeRepo.save(recipe);
+        } else {
+            return null;
+        }
+    }
+    public boolean deleteRecipe(Long id) {
+        Optional<Recipe> recipe = recipeRepo.findById(id);
+        if (recipe.isPresent()) {
+            recipeRepo.deleteById(id);
+            return true;
+        } else {
+            return false;
+        }
     }
 }
