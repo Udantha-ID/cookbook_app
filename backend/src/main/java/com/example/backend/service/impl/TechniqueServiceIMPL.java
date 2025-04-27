@@ -50,4 +50,21 @@ public class TechniqueServiceIMPL implements TechniqueService {
 
         return techniqueDTOList;
     }
+
+    @Override
+    public String updateTechnique(TechniqueDTO techniqueDTO) {
+        if (techniqueRepo.existsById(techniqueDTO.getTechniqueId())) {
+            Technique technique = techniqueRepo.getReferenceById(techniqueDTO.getTechniqueId());
+            technique.setTitle(techniqueDTO.getTitle());
+            technique.setDescription(techniqueDTO.getDescription());
+            technique.setVideoTutorial(techniqueDTO.getVideoTutorial());
+            technique.setDifficultyLevel(techniqueDTO.getDifficultyLevel());
+            technique.setTags(techniqueDTO.getTags());
+
+            techniqueRepo.save(technique);
+            return "Technique updated successfully!";
+        } else {
+            return "Technique update failed. No technique found with ID: " + techniqueDTO.getTechniqueId();
+        }
+    }
 }

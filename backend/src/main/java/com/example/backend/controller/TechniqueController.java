@@ -37,4 +37,10 @@ public class TechniqueController {
     public List<TechniqueDTO> getAllTechniques() {
         return techniqueService.getAllTechniques();
     }
+
+    @PutMapping(path = "/update")
+    public String updateTechnique(@RequestBody TechniqueDTO techniqueDTO) {
+        String message = techniqueService.updateTechnique(techniqueDTO);
+        return message;
+    }
 }

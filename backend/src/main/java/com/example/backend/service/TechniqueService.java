@@ -8,4 +8,6 @@ public interface TechniqueService {
     String saveTechnique(TechniqueDTO techniqueDTO);
 
     List<TechniqueDTO> getAllTechniques();
+
+    String updateTechnique(TechniqueDTO techniqueDTO);
 }
