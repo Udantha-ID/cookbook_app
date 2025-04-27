@@ -43,4 +43,10 @@ public class TechniqueController {
         String message = techniqueService.updateTechnique(techniqueDTO);
         return message;
     }
+
+    @DeleteMapping(path = "/delete/{id}")
+    public String deleteTechnique(@PathVariable(value = "id") Long techniqueId) {
+        String message = techniqueService.deleteTechnique(techniqueId);
+        return message;
+    }
 }

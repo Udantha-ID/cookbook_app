@@ -10,4 +10,6 @@ public interface TechniqueService {
     List<TechniqueDTO> getAllTechniques();
 
     String updateTechnique(TechniqueDTO techniqueDTO);
+
+    String deleteTechnique(Long techniqueId);
 }

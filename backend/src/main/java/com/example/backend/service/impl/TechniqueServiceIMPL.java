@@ -67,4 +67,13 @@ public class TechniqueServiceIMPL implements TechniqueService {
             return "Technique update failed. No technique found with ID: " + techniqueDTO.getTechniqueId();
         }
     }
+    @Override
+    public String deleteTechnique(Long techniqueId) {
+        if (techniqueRepo.existsById(techniqueId)) {
+            techniqueRepo.deleteById(techniqueId);
+            return "Technique deleted successfully!";
+        } else {
+            return "Technique delete failed. No technique found with ID: " + techniqueId;
+        }
+    }
 }
