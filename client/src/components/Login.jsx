@@ -24,7 +24,18 @@ const Login = () => {
       [id]: value,
     }));
   };
-  
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post("http://localhost:3000/api/auth/login", formData);
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("email", formData.email);
+      navigate("/home");
+    } catch (err) {
+      setError(err.response?.data?.message || "Login failed. Please try again.");
+    }
+  };
 
   return (
     <div className="flex h-screen justify-center items-center bg-gray-100">
@@ -82,7 +93,7 @@ const Login = () => {
           </div>
         </form>
         <p className="text-center text-gray-600 text-sm mt-6">
-          Don’t have an account?{" "}
+          Don't have an account?{" "}
           <a href="/signup" className="text-blue-500 hover:underline">
             Sign Up
           </a>
