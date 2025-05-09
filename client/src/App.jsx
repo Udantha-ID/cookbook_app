@@ -1,27 +1,26 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Login from './components/Login';
-import NavBar from './components/NavBar';
-import Footer from './components/Footer';
+
+import Navbar from './components/Navbar';
+import HomeFeed from './pages/ResipeManagement/HomeFeed';
+
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen flex flex-col">
-        <NavBar />
-        <main className="flex-grow">
+      <div className="app">
+        <Navbar />
+        
+        <main className="main-content">
           <Routes>
-            <Route path="/login" element={<Login />} />
-            {/* Add more routes as needed */}
+            <Route path="/" element={<HomeFeed />} />
           </Routes>
         </main>
-        <Footer />
+        
+        
       </div>
     </Router>
   );
 }
 
 export default App;
-
-
