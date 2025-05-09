@@ -1,526 +1,173 @@
-import React, { useState } from 'react';
-import { Plus, X, Calendar, ChevronLeft, ChevronRight, Search, ArrowRight, Coffee, UtensilsCrossed, Utensils } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../../components/Navbar';
+import { Plus, Trash2, Edit, Calendar, ChevronRight, Clock, Sparkles } from 'lucide-react';
+import mealService from '../../services/mealService';
 
 const MealPlanner = () => {
   const navigate = useNavigate();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState('monday');
-  const [selectedMealType, setSelectedMealType] = useState(null);
-  const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isDragging, setIsDragging] = useState(false);
-  const [draggedItem, setDraggedItem] = useState(null);
-  
-  // Mock recipes data
-  const recipes = [
-    {
-      id: 1,
-      title: 'Avocado Toast with Eggs',
-      image: '/api/placeholder/200/200',
-      category: 'Breakfast',
-      prepTime: 10,
-      cookTime: 5,
-      description: 'A nutritious breakfast with mashed avocado and perfectly poached eggs on toast.'
-    },
-    {
-      id: 2,
-      title: 'Greek Yogurt Parfait',
-      image: '/api/placeholder/200/200',
-      category: 'Breakfast',
-      prepTime: 5,
-      cookTime: 0,
-      description: 'Layers of Greek yogurt, fresh berries, and honey granola.'
-    },
-    {
-      id: 3,
-      title: 'Chicken Caesar Salad',
-      image: '/api/placeholder/200/200',
-      category: 'Lunch',
-      prepTime: 15,
-      cookTime: 10,
-      description: 'Classic Caesar salad with grilled chicken, romaine lettuce, and homemade dressing.'
-    },
-    {
-      id: 4,
-      title: 'Mediterranean Quinoa Bowl',
-      image: '/api/placeholder/200/200',
-      category: 'Lunch',
-      prepTime: 10,
-      cookTime: 20,
-      description: 'Protein-packed quinoa with chickpeas, cucumber, tomatoes, and feta cheese.'
-    },
-    {
-      id: 5,
-      title: 'Grilled Salmon with Asparagus',
-      image: '/api/placeholder/200/200',
-      category: 'Dinner',
-      prepTime: 10,
-      cookTime: 20,
-      description: 'Omega-rich salmon fillet with roasted asparagus and lemon butter sauce.'
-    },
-    {
-      id: 6,
-      title: 'Vegetable Stir Fry',
-      image: '/api/placeholder/200/200',
-      category: 'Dinner',
-      prepTime: 15,
-      cookTime: 10,
-      description: 'Colorful mix of stir-fried vegetables with tofu in a savory sauce.'
-    }
-  ];
+  const [mealPlans, setMealPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock meal plan data
-  const [mealPlan, setMealPlan] = useState({
-    monday: {
-      breakfast: null,
-      lunch: null,
-      dinner: null
-    },
-    tuesday: {
-      breakfast: null,
-      lunch: null,
-      dinner: null
-    },
-    wednesday: {
-      breakfast: null,
-      lunch: null,
-      dinner: null
-    },
-    thursday: {
-      breakfast: null,
-      lunch: null,
-      dinner: null
-    },
-    friday: {
-      breakfast: null,
-      lunch: null,
-      dinner: null
-    },
-    saturday: {
-      breakfast: null,
-      lunch: null,
-      dinner: null
-    },
-    sunday: {
-      breakfast: null,
-      lunch: null,
-      dinner: null
-    }
-  });
-  
-  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const mealTypes = [
-    { id: 'breakfast', name: 'Breakfast', icon: <Coffee size={18} /> },
-    { id: 'lunch', name: 'Lunch', icon: <UtensilsCrossed size={18} /> },
-    { id: 'dinner', name: 'Dinner', icon: <Utensils size={18} /> },
-  ];
-  
-  // Format week range for display (e.g., "May 6 - May 12")
-  const formatWeekRange = () => {
-    const startOfWeek = new Date(currentDate);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
-    
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
-    
-    const startMonth = startOfWeek.toLocaleString('default', { month: 'short' });
-    const endMonth = endOfWeek.toLocaleString('default', { month: 'short' });
-    
-    return `${startMonth} ${startOfWeek.getDate()} - ${endMonth} ${endOfWeek.getDate()}`;
-  };
-  
-  // Get date number for each day of the week
-  const getDayDate = (dayIndex) => {
-    const date = new Date(currentDate);
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1) + dayIndex;
-    date.setDate(diff);
-    return date.getDate();
-  };
-  
-  // Navigation functions for week selection
-  const prevWeek = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(newDate.getDate() - 7);
-    setCurrentDate(newDate);
-  };
-  
-  const nextWeek = () => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(newDate.getDate() + 7);
-    setCurrentDate(newDate);
-  };
-  
-  // Recipe modal functions
-  const openRecipeModal = (day, mealType) => {
-    setSelectedDay(day);
-    setSelectedMealType(mealType);
-    setIsRecipeModalOpen(true);
-  };
-  
-  const assignRecipe = (recipe) => {
-    setMealPlan({
-      ...mealPlan,
-      [selectedDay]: {
-        ...mealPlan[selectedDay],
-        [selectedMealType]: recipe
-      }
-    });
-    setIsRecipeModalOpen(false);
-  };
-  
-  const removeRecipe = (day, mealType) => {
-    setMealPlan({
-      ...mealPlan,
-      [day]: {
-        ...mealPlan[day],
-        [mealType]: null
-      }
-    });
-  };
-  
-  // Custom drag and drop handlers
-  const handleDragStart = (day, mealType, recipe) => {
-    setIsDragging(true);
-    setDraggedItem({ day, mealType, recipe });
-  };
-  
-  const handleDragOver = (e, day, mealType) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('bg-primary-50', 'dark:bg-primary-900/20');
-  };
-  
-  const handleDragLeave = (e) => {
-    e.currentTarget.classList.remove('bg-primary-50', 'dark:bg-primary-900/20');
-  };
-  
-  const handleDrop = (e, day, mealType) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('bg-primary-50', 'dark:bg-primary-900/20');
-    
-    if (!draggedItem) return;
-    
-    const { day: sourceDay, mealType: sourceMealType, recipe } = draggedItem;
-    
-    // Don't do anything if dropped on the same cell
-    if (sourceDay === day && sourceMealType === mealType) return;
-    
-    // Update meal plan
-    setMealPlan({
-      ...mealPlan,
-      [sourceDay]: {
-        ...mealPlan[sourceDay],
-        [sourceMealType]: null
-      },
-      [day]: {
-        ...mealPlan[day],
-        [mealType]: recipe
-      }
-    });
-    
-    setIsDragging(false);
-    setDraggedItem(null);
-  };
-  
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    setDraggedItem(null);
-  };
-  
-  // Filter recipes based on search term
-  const filteredRecipes = recipes.filter(recipe => 
-    recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    recipe.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchMealPlans();
+  }, []);
 
-  // Modal component
-  const Modal = ({ isOpen, onClose, title, children }) => {
-    if (!isOpen) return null;
-    
+  const fetchMealPlans = async () => {
+    try {
+      setLoading(true);
+      const data = await mealService.getAllMeals();
+      setMealPlans(data);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching meal plans:', error);
+      setError('Failed to load meal plans. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this meal plan?')) {
+      try {
+        await mealService.deleteMeal(id);
+        setMealPlans(mealPlans.filter(plan => plan.id !== id));
+      } catch (error) {
+        console.error('Error deleting meal plan:', error);
+        setError('Failed to delete meal plan. Please try again later.');
+      }
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-        <div className="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium">{title}</h3>
-            <button 
-              onClick={onClose}
-              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <div className="p-4">
-            {children}
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+              <div className="absolute top-0 left-0 animate-ping rounded-full h-12 w-12 bg-indigo-200 opacity-75"></div>
+            </div>
           </div>
         </div>
       </div>
     );
-  };
+  }
 
-  // Card component
-  const Card = ({ children, className, hoverable }) => {
-    return (
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${hoverable ? 'hover:shadow-md transition-shadow' : ''} ${className || ''}`}>
-        {children}
-      </div>
-    );
-  };
-
-  // Button component
-  const Button = ({ children, onClick, variant = "primary", size = "md", icon, iconPosition = "left", className }) => {
-    const baseClasses = "inline-flex items-center justify-center font-medium rounded-lg transition-colors";
-    
-    const sizeClasses = {
-      sm: "px-3 py-1.5 text-sm",
-      md: "px-4 py-2",
-      lg: "px-5 py-2.5 text-lg"
-    };
-    
-    const variantClasses = {
-      primary: "bg-primary-500 hover:bg-primary-600 text-white",
-      outline: "border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300",
-      text: "text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20"
-    };
-    
-    return (
-      <button
-        onClick={onClick}
-        className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className || ''}`}
-      >
-        {icon && iconPosition === "left" && <span className="mr-2">{icon}</span>}
-        {children}
-        {icon && iconPosition === "right" && <span className="ml-2">{icon}</span>}
-      </button>
-    );
-  };
-  
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar />
-      
-      <div className="pt-20 pb-16">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Meal Planner</h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Plan your meals for the week with our drag-and-drop meal planner
-              </p>
-            </div>
-            <Button 
-              onClick={() => navigate('/addmeal')} 
-              variant="primary"
-              icon={<Plus size={18} />}
-              className="shadow-md"
-            >
-              Create New Meal Plan
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2 flex items-center">
+              <Sparkles className="mr-2" size={24} />
+              Meal Plans
+            </h1>
+            <p className="text-indigo-600/70">Manage and organize your weekly meal plans</p>
           </div>
+          <button
+            onClick={() => navigate('/addmeal')}
+            className="group relative px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg flex items-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 overflow-hidden"
+          >
+            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+            <Plus className="mr-2" size={20} />
+            Create New Plan
+          </button>
+        </div>
 
-          {/* Weekly navigation */}
-          <div className="flex items-center justify-between mb-8">
-            <Button 
-              onClick={prevWeek} 
-              variant="outline" 
-              icon={<ChevronLeft size={18} />}
-            >
-              Previous Week
-            </Button>
-            
-            <div className="flex items-center text-lg font-medium text-gray-900 dark:text-white">
-              <Calendar size={20} className="mr-2 text-primary-500" />
-              {formatWeekRange()}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg shadow-md">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              {error}
             </div>
-            
-            <Button 
-              onClick={nextWeek} 
-              variant="outline" 
-              icon={<ChevronRight size={18} />}
-              iconPosition="right"
-            >
-              Next Week
-            </Button>
           </div>
-          
-          {/* Meal Planner Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-8 gap-3 mb-10 overflow-x-auto">
-            {/* First column - Meal types */}
-            <div className="md:col-span-1">
-              <div className="h-14"></div> {/* Empty space for alignment */}
-              
-              {mealTypes.map((mealType) => (
-                <div 
-                  key={mealType.id} 
-                  className="h-36 flex items-center justify-center"
+        )}
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {mealPlans.length === 0 ? (
+            <div className="col-span-full">
+              <div className="text-center py-16 px-4 bg-white/80 backdrop-blur-sm rounded-xl shadow-lg border border-indigo-100">
+                <div className="relative inline-block">
+                  <Calendar className="mx-auto h-12 w-12 text-indigo-400 mb-4" />
+                  <div className="absolute -top-2 -right-2 animate-pulse">
+                    <Sparkles className="h-6 w-6 text-purple-400" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-medium text-indigo-900 mb-2">No meal plans yet</h3>
+                <p className="text-indigo-600/70 mb-6">Get started by creating your first meal plan</p>
+                <button
+                  onClick={() => navigate('/addmeal')}
+                  className="group relative inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden"
                 >
-                  <div className="flex flex-col items-center">
-                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-2">
-                      {mealType.icon}
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{mealType.name}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Day columns */}
-            {days.map((day, index) => (
-              <div key={day} className="md:col-span-1">
-                <div className="h-14 flex flex-col items-center justify-center rounded-t-lg bg-primary-500 text-white">
-                  <span className="font-medium capitalize">{day.slice(0, 3)}</span>
-                  <span className="text-xs font-medium">{getDayDate(index)}</span>
-                </div>
-                
-                {mealTypes.map((mealType) => (
-                  <div
-                    key={`${day}-${mealType.id}`}
-                    onDragOver={(e) => handleDragOver(e, day, mealType.id)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, day, mealType.id)}
-                    className="h-36 p-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
-                  >
-                    {mealPlan[day][mealType.id] ? (
-                      <div
-                        draggable
-                        onDragStart={() => handleDragStart(day, mealType.id, mealPlan[day][mealType.id])}
-                        onDragEnd={handleDragEnd}
-                        className="cursor-grab active:cursor-grabbing"
-                      >
-                        <Card className="h-32 p-2 relative group">
-                          <img 
-                            src={mealPlan[day][mealType.id].image} 
-                            alt={mealPlan[day][mealType.id].title}
-                            className="w-full h-16 object-cover rounded-md mb-1"
-                          />
-                          <h4 className="text-xs font-medium line-clamp-2 text-gray-900 dark:text-white">
-                            {mealPlan[day][mealType.id].title}
-                          </h4>
-                          <button
-                            onClick={() => removeRecipe(day, mealType.id)}
-                            className="absolute top-1 right-1 p-1 bg-white dark:bg-gray-800 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 dark:text-gray-400 hover:text-red-500"
-                          >
-                            <X size={12} />
-                          </button>
-                        </Card>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => openRecipeModal(day, mealType.id)}
-                        className="h-32 w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:border-primary-400 dark:hover:border-primary-600 transition-colors"
-                      >
-                        <Plus size={20} className="text-gray-400 dark:text-gray-600 mb-1" />
-                        <span className="text-xs text-gray-500 dark:text-gray-500">Add {mealType.name}</span>
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                  <Plus className="mr-2" size={16} />
+                  Create Plan
+                </button>
               </div>
-            ))}
-          </div>
-          
-          {/* Tips Section */}
-          <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-6 mb-8">
-            <h3 className="text-xl font-medium mb-4 text-gray-900 dark:text-white">Meal Planning Tips</h3>
-            <ul className="space-y-3">
-              <li className="flex items-start">
-                <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-                <span className="text-gray-700 dark:text-gray-300">Plan meals that share ingredients to reduce waste and save money.</span>
-              </li>
-              <li className="flex items-start">
-                <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-                <span className="text-gray-700 dark:text-gray-300">Consider your schedule when planning. Save complex recipes for days when you have more time.</span>
-              </li>
-              <li className="flex items-start">
-                <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-                <span className="text-gray-700 dark:text-gray-300">Batch cook on weekends and plan for leftovers to save time during busy weekdays.</span>
-              </li>
-              <li className="flex items-start">
-                <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-                <span className="text-gray-700 dark:text-gray-300">Aim for a balance of proteins, carbs, and vegetables across your meals.</span>
-              </li>
-            </ul>
-          </div>
-          
-          {/* Shopping List Button */}
-          <div className="flex justify-center">
-            <Button 
-              variant="primary" 
-              size="lg"
-              icon={<ArrowRight size={18} />}
-              iconPosition="right"
-              className="shadow-md"
-            >
-              Generate Shopping List
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Recipe Selection Modal */}
-      <Modal
-        isOpen={isRecipeModalOpen}
-        onClose={() => setIsRecipeModalOpen(false)}
-        title={`Select Recipe for ${selectedMealType && selectedMealType.charAt(0).toUpperCase() + selectedMealType.slice(1)}`}
-      >
-        <div className="mb-4 relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-500" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search recipes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-white"
-          />
-        </div>
-        
-        <div className="h-96 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4 pr-2">
-          {filteredRecipes.length > 0 ? (
-            filteredRecipes.map((recipe) => (
-              <div 
-                key={recipe.id}
-                onClick={() => assignRecipe(recipe)}
-                className="cursor-pointer"
+            </div>
+          ) : (
+            mealPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className="group bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1 border border-indigo-100"
               >
-                <Card hoverable className="p-3">
-                  <div className="flex space-x-3">
-                    <img 
-                      src={recipe.image} 
-                      alt={recipe.title}
-                      className="w-20 h-20 object-cover rounded-md"
-                    />
-                    <div className="flex-grow">
-                      <h4 className="font-medium line-clamp-1 text-gray-900 dark:text-white">{recipe.title}</h4>
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        {recipe.prepTime + recipe.cookTime} min • {recipe.category}
-                      </div>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                        {recipe.description}
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-xl font-semibold text-indigo-900 mb-2">
+                        {plan.title}
+                      </h2>
+                      <p className="text-indigo-600/70 text-sm line-clamp-2">
+                        {plan.description}
                       </p>
                     </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleDelete(plan.id)}
+                        className="p-2 text-indigo-400 hover:text-red-500 transition-colors duration-200"
+                        title="Delete plan"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                      <button
+                        onClick={() => navigate(`/edit-meal/${plan.id}`)}
+                        className="p-2 text-indigo-400 hover:text-purple-500 transition-colors duration-200"
+                        title="Edit plan"
+                      >
+                        <Edit size={18} />
+                      </button>
+                    </div>
                   </div>
-                </Card>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm text-indigo-600/70">
+                      <Calendar className="mr-2" size={16} />
+                      <span>
+                        {new Date(plan.startDate).toLocaleDateString()} - {new Date(plan.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center text-sm text-indigo-600/70">
+                      <Clock className="mr-2" size={16} />
+                      <span>{plan.meals ? Object.keys(plan.meals).length : 0} meals planned</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => navigate(`/edit-meal/${plan.id}`)}
+                    className="mt-4 w-full flex items-center justify-center px-4 py-2 border border-indigo-200 rounded-lg text-sm font-medium text-indigo-700 hover:bg-indigo-50 transition-colors duration-200 group-hover:border-indigo-300"
+                  >
+                    View Details
+                    <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform duration-200" size={16} />
+                  </button>
+                </div>
               </div>
             ))
-          ) : (
-            <div className="col-span-full flex flex-col items-center justify-center py-8">
-              <p className="text-gray-600 dark:text-gray-400 mb-2">No recipes found matching your search.</p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSearchTerm('')}
-              >
-                Clear Search
-              </Button>
-            </div>
           )}
         </div>
-      </Modal>
+      </div>
     </div>
   );
 };
