@@ -11,7 +11,7 @@ public class TechniqueDTO {
     private Long techniqueId;
     private String title;
     private String description;
-    private String videoTutorial;
+    private String imageUrl;  // Changed from videoTutorial to imageUrl
     private String difficultyLevel;
     private String tags;
 }
