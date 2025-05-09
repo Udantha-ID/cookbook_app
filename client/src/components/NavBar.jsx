@@ -19,13 +19,13 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-amber-200 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 rounded-b-full ">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-[9px]">
         <div className="flex justify-between h-16">
           {/* Left side - Logo and main nav */}
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-800 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-600 bg-clip-text text-transparent">
                 CookBook
               </span>
             </Link>
