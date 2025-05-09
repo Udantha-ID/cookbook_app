@@ -99,7 +99,7 @@ const Navbar = () => {
             </Link>
           </div>
           
-          {/* Center - Main navigation (desktop) */}
+       
           <div className="hidden md:flex md:space-x-8 md:items-center">
             <Link 
               to="/" 
