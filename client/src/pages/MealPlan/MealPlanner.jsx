@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, X, Calendar, ChevronLeft, ChevronRight, Search, ArrowRight, Coffee, UtensilsCrossed, Utensils } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/Navbar';
 
 const MealPlanner = () => {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState('monday');
   const [selectedMealType, setSelectedMealType] = useState(null);
@@ -296,137 +299,164 @@ const MealPlanner = () => {
   };
   
   return (
-    <div className="pt-24 pb-16">
-      <div className="container mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Meal Planner</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Plan your meals for the week with our drag-and-drop meal planner
-          </p>
-        </div>
-        
-        {/* Weekly navigation */}
-        <div className="flex items-center justify-between mb-8">
-          <Button 
-            onClick={prevWeek} 
-            variant="outline" 
-            icon={<ChevronLeft size={18} />}
-          >
-            Previous Week
-          </Button>
-          
-          <div className="flex items-center text-lg font-medium">
-            <Calendar size={20} className="mr-2 text-primary-500" />
-            {formatWeekRange()}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Navbar />
+      
+      <div className="pt-20 pb-16">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Meal Planner</h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Plan your meals for the week with our drag-and-drop meal planner
+              </p>
+            </div>
+            <Button 
+              onClick={() => navigate('/addmeal')} 
+              variant="primary"
+              icon={<Plus size={18} />}
+              className="shadow-md"
+            >
+              Create New Meal Plan
+            </Button>
+          </div>
+
+          {/* Weekly navigation */}
+          <div className="flex items-center justify-between mb-8">
+            <Button 
+              onClick={prevWeek} 
+              variant="outline" 
+              icon={<ChevronLeft size={18} />}
+            >
+              Previous Week
+            </Button>
+            
+            <div className="flex items-center text-lg font-medium text-gray-900 dark:text-white">
+              <Calendar size={20} className="mr-2 text-primary-500" />
+              {formatWeekRange()}
+            </div>
+            
+            <Button 
+              onClick={nextWeek} 
+              variant="outline" 
+              icon={<ChevronRight size={18} />}
+              iconPosition="right"
+            >
+              Next Week
+            </Button>
           </div>
           
-          <Button 
-            onClick={nextWeek} 
-            variant="outline" 
-            icon={<ChevronRight size={18} />}
-            iconPosition="right"
-          >
-            Next Week
-          </Button>
-        </div>
-        
-        {/* Meal Planner Grid */}
-        <div className="grid grid-cols-8 gap-3 mb-10">
-          {/* First column - Meal types */}
-          <div className="col-span-1">
-            <div className="h-14"></div> {/* Empty space for alignment */}
-            
-            {mealTypes.map((mealType) => (
-              <div 
-                key={mealType.id} 
-                className="h-36 flex items-center justify-center"
-              >
-                <div className="flex flex-col items-center">
-                  <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-2">
-                    {mealType.icon}
+          {/* Meal Planner Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-8 gap-3 mb-10 overflow-x-auto">
+            {/* First column - Meal types */}
+            <div className="md:col-span-1">
+              <div className="h-14"></div> {/* Empty space for alignment */}
+              
+              {mealTypes.map((mealType) => (
+                <div 
+                  key={mealType.id} 
+                  className="h-36 flex items-center justify-center"
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-2">
+                      {mealType.icon}
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{mealType.name}</span>
                   </div>
-                  <span className="text-sm font-medium">{mealType.name}</span>
                 </div>
+              ))}
+            </div>
+            
+            {/* Day columns */}
+            {days.map((day, index) => (
+              <div key={day} className="md:col-span-1">
+                <div className="h-14 flex flex-col items-center justify-center rounded-t-lg bg-primary-500 text-white">
+                  <span className="font-medium capitalize">{day.slice(0, 3)}</span>
+                  <span className="text-xs font-medium">{getDayDate(index)}</span>
+                </div>
+                
+                {mealTypes.map((mealType) => (
+                  <div
+                    key={`${day}-${mealType.id}`}
+                    onDragOver={(e) => handleDragOver(e, day, mealType.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, day, mealType.id)}
+                    className="h-36 p-2 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800"
+                  >
+                    {mealPlan[day][mealType.id] ? (
+                      <div
+                        draggable
+                        onDragStart={() => handleDragStart(day, mealType.id, mealPlan[day][mealType.id])}
+                        onDragEnd={handleDragEnd}
+                        className="cursor-grab active:cursor-grabbing"
+                      >
+                        <Card className="h-32 p-2 relative group">
+                          <img 
+                            src={mealPlan[day][mealType.id].image} 
+                            alt={mealPlan[day][mealType.id].title}
+                            className="w-full h-16 object-cover rounded-md mb-1"
+                          />
+                          <h4 className="text-xs font-medium line-clamp-2 text-gray-900 dark:text-white">
+                            {mealPlan[day][mealType.id].title}
+                          </h4>
+                          <button
+                            onClick={() => removeRecipe(day, mealType.id)}
+                            className="absolute top-1 right-1 p-1 bg-white dark:bg-gray-800 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 dark:text-gray-400 hover:text-red-500"
+                          >
+                            <X size={12} />
+                          </button>
+                        </Card>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => openRecipeModal(day, mealType.id)}
+                        className="h-32 w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:border-primary-400 dark:hover:border-primary-600 transition-colors"
+                      >
+                        <Plus size={20} className="text-gray-400 dark:text-gray-600 mb-1" />
+                        <span className="text-xs text-gray-500 dark:text-gray-500">Add {mealType.name}</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             ))}
           </div>
           
-          {/* Day columns */}
-          {days.map((day, index) => (
-            <div key={day} className="col-span-1">
-              <div className="h-14 flex flex-col items-center justify-center rounded-t-lg bg-primary-500 text-white">
-                <span className="font-medium capitalize">{day.slice(0, 3)}</span>
-                <span className="text-xs font-medium">{getDayDate(index)}</span>
-              </div>
-              
-              {mealTypes.map((mealType) => (
-                <div
-                  key={`${day}-${mealType.id}`}
-                  onDragOver={(e) => handleDragOver(e, day, mealType.id)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, day, mealType.id)}
-                  className="h-36 p-2 border border-gray-200 dark:border-gray-800"
-                >
-                  {mealPlan[day][mealType.id] ? (
-                    <div
-                      draggable
-                      onDragStart={() => handleDragStart(day, mealType.id, mealPlan[day][mealType.id])}
-                      onDragEnd={handleDragEnd}
-                      className="cursor-grab active:cursor-grabbing"
-                    >
-                      <Card className="h-32 p-2 relative group">
-                        <img 
-                          src={mealPlan[day][mealType.id].image} 
-                          alt={mealPlan[day][mealType.id].title}
-                          className="w-full h-16 object-cover rounded-md mb-1"
-                        />
-                        <h4 className="text-xs font-medium line-clamp-2">
-                          {mealPlan[day][mealType.id].title}
-                        </h4>
-                        <button
-                          onClick={() => removeRecipe(day, mealType.id)}
-                          className="absolute top-1 right-1 p-1 bg-white dark:bg-gray-800 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 dark:text-gray-400 hover:text-red-500"
-                        >
-                          <X size={12} />
-                        </button>
-                      </Card>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => openRecipeModal(day, mealType.id)}
-                      className="h-32 w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:border-primary-400 dark:hover:border-primary-600 transition-colors"
-                    >
-                      <Plus size={20} className="text-gray-400 dark:text-gray-600 mb-1" />
-                      <span className="text-xs text-gray-500 dark:text-gray-500">Add {mealType.name}</span>
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-        
-        {/* Tips Section */}
-        <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-6 mb-8">
-          <h3 className="text-xl font-medium mb-4">Meal Planning Tips</h3>
-          <ul className="space-y-3">
-            <li className="flex items-start">
-              <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-              <span>Plan meals that share ingredients to reduce waste and save money.</span>
-            </li>
-            <li className="flex items-start">
-              <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-              <span>Consider your schedule when planning. Save complex recipes for days when you have more time.</span>
-            </li>
-            <li className="flex items-start">
-              <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-              <span>Batch cook on weekends and plan for leftovers to save time during busy weekdays.</span>
-            </li>
-            <li className="flex items-start">
-              <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
-              <span>Aim for a balance of proteins, carbs, and vegetables across your meals.</span>
-            </li>
-          </ul>
+          {/* Tips Section */}
+          <div className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-6 mb-8">
+            <h3 className="text-xl font-medium mb-4 text-gray-900 dark:text-white">Meal Planning Tips</h3>
+            <ul className="space-y-3">
+              <li className="flex items-start">
+                <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
+                <span className="text-gray-700 dark:text-gray-300">Plan meals that share ingredients to reduce waste and save money.</span>
+              </li>
+              <li className="flex items-start">
+                <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
+                <span className="text-gray-700 dark:text-gray-300">Consider your schedule when planning. Save complex recipes for days when you have more time.</span>
+              </li>
+              <li className="flex items-start">
+                <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
+                <span className="text-gray-700 dark:text-gray-300">Batch cook on weekends and plan for leftovers to save time during busy weekdays.</span>
+              </li>
+              <li className="flex items-start">
+                <ArrowRight size={16} className="text-primary-500 mt-1 mr-2 flex-shrink-0" />
+                <span className="text-gray-700 dark:text-gray-300">Aim for a balance of proteins, carbs, and vegetables across your meals.</span>
+              </li>
+            </ul>
+          </div>
+          
+          {/* Shopping List Button */}
+          <div className="flex justify-center">
+            <Button 
+              variant="primary" 
+              size="lg"
+              icon={<ArrowRight size={18} />}
+              iconPosition="right"
+              className="shadow-md"
+            >
+              Generate Shopping List
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -445,7 +475,7 @@ const MealPlanner = () => {
             placeholder="Search recipes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 dark:text-white"
           />
         </div>
         
@@ -465,7 +495,7 @@ const MealPlanner = () => {
                       className="w-20 h-20 object-cover rounded-md"
                     />
                     <div className="flex-grow">
-                      <h4 className="font-medium line-clamp-1">{recipe.title}</h4>
+                      <h4 className="font-medium line-clamp-1 text-gray-900 dark:text-white">{recipe.title}</h4>
                       <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                         {recipe.prepTime + recipe.cookTime} min • {recipe.category}
                       </div>

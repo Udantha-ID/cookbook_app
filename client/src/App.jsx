@@ -1,21 +1,24 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Login from './components/Login';
-import NavBar from './components/NavBar';
-import Footer from './components/Footer';
+import MealPlan from './pages/MealPlan/MealPlanner.jsx';
+import AddMeal from './pages/MealPlan/AddMeal.jsx'
+
+
+import Homefeed from './pages/ResipeManagement/HomeFeed.jsx'
 
 function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
-        <NavBar />
+       
         <main className="flex-grow">
           <Routes>
-            <Route path="/login" element={<Login />} />
-            {/* Add more routes as needed */}
+            <Route path="/" element={<Homefeed />} />
+            <Route path="/meal-planner" element={<MealPlan />} />
+            <Route path="/addmeal" element={<AddMeal />} />
           </Routes>
         </main>
-        <Footer />
+        
       </div>
     </Router>
   );
