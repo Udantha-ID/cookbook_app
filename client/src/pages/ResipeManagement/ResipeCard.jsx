@@ -10,21 +10,10 @@ export default function RecipeCard({ recipe = {} }) {
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState([
-    { id: 1, user: "Jane Smith", avatar: "/api/placeholder/40/40", content: "These look amazing! Will try the recipe this weekend.", time: "2h", likes: 3 },
-    { id: 2, user: "Robert Lee", avatar: "/api/placeholder/40/40", content: "I made these yesterday. So good!", time: "1d", likes: 8 }
+    { id: 1, user: "Jane Smith", avatar: "/avatar1.jpg", content: "These look amazing! Will try the recipe this weekend.", time: "2h", likes: 3 },
+    { id: 2, user: "Robert Lee", avatar: "/avatar2.jpg", content: "I made these yesterday. So good!", time: "1d", likes: 8 }
   ]);
   const [newComment, setNewComment] = useState("");
-
-  // Default values for recipe
-  const recipeData = {
-    id: recipe.id || '1',
-    title: recipe.title || 'Chocolate Chip Cookies',
-    description: recipe.description || 'Soft and chewy cookies with melty chocolate chips. Perfect for any occasion!',
-    author: recipe.author || 'Mike Johnson',
-    date: recipe.date || 'Mar 14, 2024',
-    readTime: recipe.readTime || '30 min',
-    tags: recipe.tags || ['dessert', 'baking', 'easy']
-  };
 
   const handleLike = () => {
     setLikes(isLiked ? likes - 1 : likes + 1);
@@ -41,7 +30,7 @@ export default function RecipeCard({ recipe = {} }) {
       setComments([{
         id: comments.length + 1,
         user: "You",
-        avatar: "/api/placeholder/40/40",
+        avatar: "/avatar-you.jpg",
         content: newComment,
         time: "now",
         likes: 0
@@ -50,24 +39,20 @@ export default function RecipeCard({ recipe = {} }) {
     }
   };
 
-  const handleDeleteComment = (id) => {
-    setComments(comments.filter(comment => comment.id !== id));
-  };
-
   const navigateToDetail = (e) => {
     e.preventDefault();
-    navigate(`/recipe/${recipeData.id}`);
+    navigate(`/recipe/${recipe.id}`);
   };
 
   return (
-    <div className="w-150 mx-auto bg-white rounded-xl shadow-lg overflow-hidden my-6 transition-all duration-300 hover:shadow-xl">
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
       {/* Header */}
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between p-4 border-b border-amber-100">
         <div className="flex items-center space-x-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-pink-500 overflow-hidden">
               <img 
-                src="/api/placeholder/40/40"
+                src={recipe.authorAvatar || "/avatar-default.jpg"}
                 alt="User profile"
                 className="w-full h-full object-cover"
               />
@@ -77,35 +62,35 @@ export default function RecipeCard({ recipe = {} }) {
             </div>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-800">{recipeData.author}</h3>
+            <h3 className="font-semibold text-gray-800">{recipe.author}</h3>
             <div className="flex items-center text-xs text-gray-500">
               <Clock size={12} className="mr-1" />
-              <span>{recipeData.date} • {recipeData.readTime} read</span>
+              <span>{recipe.date} • {recipe.readTime} read</span>
             </div>
           </div>
         </div>
         <div className="relative">
           <button 
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full hover:bg-amber-50 transition-colors"
             onClick={() => setShowMenu(!showMenu)}
           >
-            <MoreHorizontal size={18} />
+            <MoreHorizontal size={18} className="text-gray-600" />
           </button>
           
           {showMenu && (
             <div className="absolute right-0 top-10 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-100">
-              <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors">
+              <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-amber-50 transition-colors">
                 <Bookmark size={16} className="mr-2" />
                 Save to collection
               </button>
-              <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50 transition-colors">
+              <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-amber-50 transition-colors">
                 <Share2 size={16} className="mr-2" />
                 Share recipe
               </button>
               <div className="border-t border-gray-100">
-                <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50 text-red-500 transition-colors">
+                <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-amber-50 text-red-500 transition-colors">
                   <User size={16} className="mr-2" />
-                  Unfollow author
+                  Delete
                 </button>
               </div>
             </div>
@@ -114,11 +99,13 @@ export default function RecipeCard({ recipe = {} }) {
       </div>
 
       {/* Content */}
-      <div className="px-4 pb-2">
-        <h2 className="text-xl font-bold mb-2 text-gray-900">{recipeData.title}</h2>
-        <p className="text-gray-600 mb-3">{recipeData.description}</p>
+      <div className="p-4">
+        <h2 className="text-xl font-bold mb-2 text-gray-900 hover:text-amber-600 transition-colors cursor-pointer" onClick={navigateToDetail}>
+          {recipe.title}
+        </h2>
+        <p className="text-gray-600 mb-3">{recipe.description}</p>
         <div className="flex flex-wrap gap-2 mb-3">
-          {recipeData.tags.map((tag, index) => (
+          {recipe.tags.map((tag, index) => (
             <span key={index} className={`px-2 py-1 ${
               index % 3 === 0 ? 'bg-blue-50 text-blue-600' : 
               index % 3 === 1 ? 'bg-green-50 text-green-600' : 
@@ -128,59 +115,61 @@ export default function RecipeCard({ recipe = {} }) {
         </div>
       </div>
 
-      {/* Recipe image - clickable */}
+      {/* Recipe image */}
       <div 
         className="relative w-full h-64 overflow-hidden group cursor-pointer"
         onClick={navigateToDetail}
-        role="button"
-        tabIndex={0}
-        aria-label={`View ${recipeData.title} recipe details`}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            navigateToDetail(e);
-          }
-        }}
       >
         <img 
-          src="/api/placeholder/600/400" 
-          alt={recipeData.title} 
+          src={recipe.image || "/food-default.jpg"} 
+          alt={recipe.title} 
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <button 
           onClick={(e) => {
-            e.stopPropagation(); // Prevent navigation
+            e.stopPropagation();
             handleSave();
           }}
-          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all ${isSaved ? 'bg-red-500 text-white' : 'bg-white/80 text-gray-700 hover:bg-white'}`}
+          className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all ${
+            isSaved ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-white/80 text-gray-700 hover:bg-white'
+          }`}
         >
           <Bookmark size={18} className={isSaved ? 'fill-white' : ''} />
         </button>
       </div>
 
       {/* Stats and actions */}
-      <div className="px-4 py-3">
+      <div className="p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-4">
             <button 
               onClick={handleLike}
               className="flex items-center space-x-1 group"
             >
-              <div className={`p-1.5 rounded-full transition-colors ${isLiked ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'}`}>
+              <div className={`p-1.5 rounded-full transition-colors ${
+                isLiked ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
+              }`}>
                 <Heart size={18} className={isLiked ? 'fill-red-500' : ''} />
               </div>
-              <span className={`text-sm ${isLiked ? 'text-red-500 font-medium' : 'text-gray-500'}`}>{likes}</span>
+              <span className={`text-sm ${
+                isLiked ? 'text-red-500 font-medium' : 'text-gray-500'
+              }`}>{likes}</span>
             </button>
             <button 
               onClick={() => setShowComments(!showComments)}
               className="flex items-center space-x-1 group"
             >
-              <div className={`p-1.5 rounded-full transition-colors ${showComments ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'}`}>
+              <div className={`p-1.5 rounded-full transition-colors ${
+                showComments ? 'bg-blue-100 text-blue-500' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
+              }`}>
                 <MessageSquare size={18} />
               </div>
-              <span className={`text-sm ${showComments ? 'text-blue-500 font-medium' : 'text-gray-500'}`}>{comments.length}</span>
+              <span className={`text-sm ${
+                showComments ? 'text-blue-500 font-medium' : 'text-gray-500'
+              }`}>{comments.length}</span>
             </button>
           </div>
-          <button className="flex items-center space-x-1 text-gray-500 hover:text-gray-700 transition-colors">
+          <button className="flex items-center space-x-1 text-gray-500 hover:text-amber-600 transition-colors">
             <Share2 size={18} />
             <span className="text-sm">Share</span>
           </button>
@@ -188,12 +177,11 @@ export default function RecipeCard({ recipe = {} }) {
 
         {/* Comments section */}
         {showComments && (
-          <div className="mt-4 border-t border-gray-100 pt-3">
-            {/* Comment input */}
+          <div className="mt-4 border-t border-amber-100 pt-3">
             <form onSubmit={handleAddComment} className="flex items-center space-x-2 mb-4">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 to-pink-500 overflow-hidden">
                 <img 
-                  src="/api/placeholder/32/32"
+                  src="/avatar-you.jpg"
                   alt="User avatar"
                   className="w-full h-full object-cover"
                 />
@@ -201,7 +189,7 @@ export default function RecipeCard({ recipe = {} }) {
               <div className="flex-1 relative">
                 <input
                   type="text"
-                  className="w-full px-4 py-2 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white"
+                  className="w-full px-4 py-2 bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-300 focus:bg-white"
                   placeholder="Add a comment..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
@@ -209,7 +197,9 @@ export default function RecipeCard({ recipe = {} }) {
                 <button 
                   type="submit"
                   disabled={!newComment.trim()}
-                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-sm px-3 py-1 rounded-full transition-colors ${newComment.trim() ? 'bg-blue-500 text-white hover:bg-blue-600' : 'text-gray-400 cursor-not-allowed'}`}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-sm px-3 py-1 rounded-full transition-colors ${
+                    newComment.trim() ? 'bg-amber-500 text-white hover:bg-amber-600' : 'text-gray-400 cursor-not-allowed'
+                  }`}
                 >
                   Post
                 </button>
@@ -242,7 +232,7 @@ export default function RecipeCard({ recipe = {} }) {
                       {comment.user === "You" && (
                         <button 
                           className="text-red-500 hover:text-red-700 transition-colors"
-                          onClick={() => handleDeleteComment(comment.id)}
+                          onClick={() => setComments(comments.filter(c => c.id !== comment.id))}
                         >
                           Delete
                         </button>
