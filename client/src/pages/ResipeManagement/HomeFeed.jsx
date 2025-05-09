@@ -31,15 +31,21 @@ function HomeFeed() {
   ];
 
   return (
-    <div className='bg-gray-300'>
+    <div className='min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100'>
       <Navbar />
-      <RecipeForm />
-      <LeftSideBar />
-      <RightSideBar />
-      <div className="flex flex-col items-center">
-        {recipes.map(recipe => (
-          <RecipeCard key={recipe.id} recipe={recipe} />
-        ))}
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex gap-6">
+          <LeftSideBar />
+          <div className="flex-1">
+            <RecipeForm />
+            <div className="mt-8 space-y-6">
+              {recipes.map(recipe => (
+                <RecipeCard key={recipe.id} recipe={recipe} />
+              ))}
+            </div>
+          </div>
+          <RightSideBar />
+        </div>
       </div>
     </div>
   );

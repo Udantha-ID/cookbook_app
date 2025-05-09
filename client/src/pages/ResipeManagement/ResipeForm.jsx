@@ -172,8 +172,8 @@ const RecipeForm = () => {
   return (
     <div className="w-full max-w-2xl mx-auto my-4 ">
       {/* Facebook-style post composer */}
-      <div className="bg-blue-300 p-4 rounded-lg shadow border border-gray-200">
-        <div className="flex items-center space-x-3 mb-3">
+      <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+        <div className="flex items-center space-x-1 mb-3">
           <img src={userAvatar} alt="User" className="w-10 h-10 rounded-full" />
           <button 
             onClick={openModal}
