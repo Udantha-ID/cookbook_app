@@ -1,5 +1,5 @@
 # Dependencies
-/node_modules
+/node_modules/*
 /.pnp
 .pnp.js
 
@@ -84,3 +84,4 @@ public
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+config.bat
