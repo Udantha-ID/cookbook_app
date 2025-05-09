@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 const RecipeForm = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,6 +14,7 @@ const RecipeForm = () => {
     mediaType: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
   // Handle text input changes
   const handleChange = (e) => {
@@ -73,19 +75,72 @@ const RecipeForm = () => {
     reader.readAsDataURL(file);
   };
 
+  // Validate form before submission
+  const validateForm = () => {
+    if (!recipe.title.trim()) {
+      setError('Title is required');
+      return false;
+    }
+    if (!recipe.description.trim()) {
+      setError('Description is required');
+      return false;
+    }
+    if (recipe.ingredients.length === 0 || recipe.ingredients.some(ing => !ing.trim())) {
+      setError('At least one ingredient is required');
+      return false;
+    }
+    if (recipe.steps.length === 0 || recipe.steps.some(step => !step.trim())) {
+      setError('At least one step is required');
+      return false;
+    }
+    if (!recipe.category) {
+      setError('Category is required');
+      return false;
+    }
+    return true;
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
     
     try {
-      // Here you would typically send the data to your backend
-      console.log('Submitting recipe:', recipe);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      closeModal();
+      // Create recipe data object
+      const recipeData = {
+        title: recipe.title,
+        description: recipe.description,
+        ingredients: recipe.ingredients,
+        steps: recipe.steps,
+        category: recipe.category,
+        rating: recipe.rating,
+        mediaUrl: recipe.mediaUrl
+      };
+
+      // Send data to backend
+      const response = await axios.post('http://localhost:8095/api/v1/recipe/save', recipeData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.data) {
+        console.log('Recipe created successfully:', response.data);
+        alert('Recipe saved successfully!');
+        closeModal();
+      }
     } catch (error) {
       console.error('Error submitting recipe:', error);
+      if (error.code === 'ERR_NETWORK') {
+        setError('Unable to connect to the server. Please check if the server is running.');
+      } else if (error.response) {
+        setError(error.response.data?.message || `Server error: ${error.response.status}`);
+      } else if (error.request) {
+        setError('No response from server. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -115,10 +170,10 @@ const RecipeForm = () => {
   const userAvatar = "/api/placeholder/40/40";
 
   return (
-    <div className="w-full max-w-2xl mx-auto my-4 py-20">
+    <div className="w-full max-w-2xl mx-auto my-4 ">
       {/* Facebook-style post composer */}
       <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
-        <div className="flex items-center space-x-3 mb-3">
+        <div className="flex items-center space-x-1 mb-3">
           <img src={userAvatar} alt="User" className="w-10 h-10 rounded-full" />
           <button 
             onClick={openModal}
@@ -378,6 +433,22 @@ const RecipeForm = () => {
                 </div>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                  <span className="block sm:inline">{error}</span>
+                  <button
+                    className="absolute top-0 bottom-0 right-0 px-4 py-3"
+                    onClick={() => setError(null)}
+                  >
+                    <svg className="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <title>Close</title>
+                      <path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+
               {/* Submit Button */}
               <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-200">
                 <button
@@ -386,7 +457,7 @@ const RecipeForm = () => {
                   disabled={isSubmitting}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Posting...' : 'Post Recipe'}
+                  {isSubmitting ? 'Saving...' : 'Save Recipe'}
                 </button>
               </div>
             </div>
