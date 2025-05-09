@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MoreHorizontal, Heart, MessageSquare, Share2, Bookmark, Clock, User } from 'lucide-react';
 
-export default function RecipeCard() {
-  const [likes, setLikes] = useState(189);
+export default function RecipeCard({ recipe = {} }) {
+  const navigate = useNavigate();
+  const [likes, setLikes] = useState(recipe.likes || 189);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -12,6 +14,17 @@ export default function RecipeCard() {
     { id: 2, user: "Robert Lee", avatar: "/api/placeholder/40/40", content: "I made these yesterday. So good!", time: "1d", likes: 8 }
   ]);
   const [newComment, setNewComment] = useState("");
+
+  // Default values for recipe
+  const recipeData = {
+    id: recipe.id || '1',
+    title: recipe.title || 'Chocolate Chip Cookies',
+    description: recipe.description || 'Soft and chewy cookies with melty chocolate chips. Perfect for any occasion!',
+    author: recipe.author || 'Mike Johnson',
+    date: recipe.date || 'Mar 14, 2024',
+    readTime: recipe.readTime || '30 min',
+    tags: recipe.tags || ['dessert', 'baking', 'easy']
+  };
 
   const handleLike = () => {
     setLikes(isLiked ? likes - 1 : likes + 1);
@@ -41,8 +54,13 @@ export default function RecipeCard() {
     setComments(comments.filter(comment => comment.id !== id));
   };
 
+  const navigateToDetail = (e) => {
+    e.preventDefault();
+    navigate(`/recipe/${recipeData.id}`);
+  };
+
   return (
-    <div className="max-w-fit mx-auto bg-white rounded-xl shadow-lg overflow-hidden my-6 transition-all duration-300 hover:shadow-xl">
+    <div className="w-150 mx-auto bg-white rounded-xl shadow-lg overflow-hidden my-6 transition-all duration-300 hover:shadow-xl">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-3">
@@ -59,10 +77,10 @@ export default function RecipeCard() {
             </div>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-800">Mike Johnson</h3>
+            <h3 className="font-semibold text-gray-800">{recipeData.author}</h3>
             <div className="flex items-center text-xs text-gray-500">
               <Clock size={12} className="mr-1" />
-              <span>Mar 14, 2024 • 30 min read</span>
+              <span>{recipeData.date} • {recipeData.readTime} read</span>
             </div>
           </div>
         </div>
@@ -97,24 +115,42 @@ export default function RecipeCard() {
 
       {/* Content */}
       <div className="px-4 pb-2">
-        <h2 className="text-xl font-bold mb-2 text-gray-900">Chocolate Chip Cookies</h2>
-        <p className="text-gray-600 mb-3">Soft and chewy cookies with melty chocolate chips. Perfect for any occasion!</p>
+        <h2 className="text-xl font-bold mb-2 text-gray-900">{recipeData.title}</h2>
+        <p className="text-gray-600 mb-3">{recipeData.description}</p>
         <div className="flex flex-wrap gap-2 mb-3">
-          <span className="px-2 py-1 bg-blue-50 text-blue-600 text-xs rounded-full">#dessert</span>
-          <span className="px-2 py-1 bg-green-50 text-green-600 text-xs rounded-full">#baking</span>
-          <span className="px-2 py-1 bg-purple-50 text-purple-600 text-xs rounded-full">#easy</span>
+          {recipeData.tags.map((tag, index) => (
+            <span key={index} className={`px-2 py-1 ${
+              index % 3 === 0 ? 'bg-blue-50 text-blue-600' : 
+              index % 3 === 1 ? 'bg-green-50 text-green-600' : 
+              'bg-purple-50 text-purple-600'
+            } text-xs rounded-full`}>#{tag}</span>
+          ))}
         </div>
       </div>
 
-      {/* Recipe image */}
-      <div className="relative w-full h-64 overflow-hidden group">
+      {/* Recipe image - clickable */}
+      <div 
+        className="relative w-full h-64 overflow-hidden group cursor-pointer"
+        onClick={navigateToDetail}
+        role="button"
+        tabIndex={0}
+        aria-label={`View ${recipeData.title} recipe details`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            navigateToDetail(e);
+          }
+        }}
+      >
         <img 
           src="/api/placeholder/600/400" 
-          alt="Chocolate chip cookies" 
+          alt={recipeData.title} 
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <button 
-          onClick={handleSave}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent navigation
+            handleSave();
+          }}
           className={`absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all ${isSaved ? 'bg-red-500 text-white' : 'bg-white/80 text-gray-700 hover:bg-white'}`}
         >
           <Bookmark size={18} className={isSaved ? 'fill-white' : ''} />
