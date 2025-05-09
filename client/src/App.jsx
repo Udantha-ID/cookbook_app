@@ -4,6 +4,7 @@ import MealPlan from './pages/MealPlan/MealPlanner.jsx';
 import AddMeal from './pages/MealPlan/AddMeal.jsx';
 import HomeFeed from './pages/ResipeManagement/HomeFeed.jsx';
 import RecipeDetail from './pages/ResipeManagement/ResipeDetail';
+import EditMeal from './pages/MealPlan/EditMeal.jsx';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
             <Route path="/" element={<HomeFeed />} />
             <Route path="/meal-planner" element={<MealPlan />} />
             <Route path="/addmeal" element={<AddMeal />} />
+            <Route path='edit-meal/:id' element={<EditMeal/>}/>
             <Route path="/recipe/:id" element={<RecipeDetail />} />
           </Routes>
         </main>
