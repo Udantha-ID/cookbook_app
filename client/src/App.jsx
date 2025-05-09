@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MealPlan from './pages/MealPlan/MealPlanner.jsx';
 import AddMeal from './pages/MealPlan/AddMeal.jsx';
 import HomeFeed from './pages/ResipeManagement/HomeFeed.jsx';
-import Navbar from './components/Navbar';
 import RecipeDetail from './pages/ResipeManagement/ResipeDetail';
 
 function App() {
