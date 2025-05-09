@@ -12,16 +12,6 @@ import {
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  // Add scroll event listener
-  React.useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 0);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const handleLoginToggle = () => {
     setIsLoggedIn(!isLoggedIn);
@@ -29,35 +19,31 @@ const Navbar = () => {
   };
 
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-lg' : 'bg-amber-50/90 backdrop-blur-sm'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Left side - Logo */}
-          <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <svg className="h-8 w-8 text-amber-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15 5V7M15 11V13M15 17V19M5 5C5 6.10457 5.89543 7 7 7H17C18.1046 7 19 6.10457 19 5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <path d="M5 19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19C19 17.8954 18.1046 17 17 17H7C5.89543 17 5 17.8954 5 19Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <path d="M5 12C5 13.1046 5.89543 14 7 14H17C18.1046 14 19 13.1046 19 12C19 10.8954 18.1046 10 17 10H7C5.89543 10 5 10.8954 5 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              <span className="text-xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">CookBook</span>
+    <nav className="bg-amber-200 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 rounded-b-full ">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-[9px]">
+        <div className="flex justify-between h-16">
+          {/* Left side - Logo and main nav */}
+          <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0 flex items-center">
+              <span className="text-xl font-bold bg-gradient-to-r from-amber-600 to-amber-600 bg-clip-text text-transparent">
+                CookBook
+              </span>
             </Link>
-          </div>
-
-          {/* Center - Navigation Links */}
-          <div className="hidden md:flex md:space-x-8 md:items-center">
-            <UnderlineLink to="/" icon={<HomeIcon className="h-5 w-5" />}>
-              Home
-            </UnderlineLink>
-            <UnderlineLink to="/meal-planner" icon={<CalendarIcon className="h-5 w-5" />}>
-              Meal Planner
-            </UnderlineLink>
-            <UnderlineLink to="/techniques" icon={<BookOpenIcon className="h-5 w-5" />}>
-              Techniques
-            </UnderlineLink>
-            <UnderlineLink to="/community" icon={<UsersIcon className="h-5 w-5" />}>
-              Community
-            </UnderlineLink>
+            
+            <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
+              <UnderlineLink to="/" icon={<HomeIcon className="h-5 w-5" />}>
+                Home
+              </UnderlineLink>
+              <UnderlineLink to="/meal-planner" icon={<CalendarIcon className="h-5 w-5" />}>
+                Meal Planner
+              </UnderlineLink>
+              <UnderlineLink to="/techniques" icon={<BookOpenIcon className="h-5 w-5" />}>
+                Techniques
+              </UnderlineLink>
+              <UnderlineLink to="/community" icon={<UsersIcon className="h-5 w-5" />}>
+                Community
+              </UnderlineLink>
+            </div>
           </div>
 
           {/* Right side - Auth buttons */}
@@ -183,6 +169,7 @@ const Navbar = () => {
   );
 };
 
+
 const UnderlineLink = ({ to, icon, children }) => (
   <Link
     to={to}
@@ -196,6 +183,7 @@ const UnderlineLink = ({ to, icon, children }) => (
   </Link>
 );
 
+// Reusable MobileNavLink component
 const MobileNavLink = ({ to, icon, children, active = false }) => (
   <Link
     to={to}
