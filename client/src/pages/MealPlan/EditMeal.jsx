@@ -1,42 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, X, Check, Utensils, ArrowLeft, Clock, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import mealService from '../../services/mealService';
 
-const AddMeal = () => {
+const EditMeal = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   // Function to get Monday of the week for a given date
   const getMonday = (date) => {
     const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
     return new Date(date.setDate(diff));
   };
 
-  // Default dates (current week)
-  const defaultStartDate = getMonday(new Date());
-  const defaultEndDate = new Date(defaultStartDate);
-  defaultEndDate.setDate(defaultStartDate.getDate() + 6);
-
   const [formData, setFormData] = useState({
     title: '',
-    startDate: defaultStartDate,
-    endDate: defaultEndDate,
-    dietType: '',
-    meals: {},
-    calories: 2000
+    startDate: new Date(),
+    endDate: new Date(),
+    description: '',
+    meals: {}
   });
 
   const [errors, setErrors] = useState({});
-  const dietTypes = ['Vegan', 'Vegetarian', 'Keto', 'Paleo', 'Gluten-Free', 'Mediterranean', 'Low-Carb'];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchMealPlan();
+  }, [id]);
+
+  const fetchMealPlan = async () => {
+    try {
+      setLoading(true);
+      const data = await mealService.getAllMeals();
+      const mealPlan = data.find(meal => meal.id === parseInt(id));
+      
+      if (mealPlan) {
+        setFormData({
+          title: mealPlan.title,
+          startDate: new Date(mealPlan.startDate),
+          endDate: new Date(mealPlan.endDate),
+          description: mealPlan.description,
+          meals: mealPlan.meals || {}
+        });
+      } else {
+        setError('Meal plan not found');
+      }
+    } catch (error) {
+      console.error('Error fetching meal plan:', error);
+      setError('Failed to load meal plan');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDateChange = (date) => {
     const selectedDate = new Date(date);
     selectedDate.setHours(0, 0, 0, 0);
     
-    // Always set to Monday of the selected week
     const monday = getMonday(new Date(selectedDate));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
@@ -52,7 +77,6 @@ const AddMeal = () => {
     const newErrors = {};
     if (!formData.title) newErrors.title = 'Plan title is required';
     if (formData.startDate < today) newErrors.startDate = 'Cannot select past weeks';
-    if (!formData.dietType) newErrors.dietType = 'Diet type is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -62,20 +86,14 @@ const AddMeal = () => {
     e.preventDefault();
     if (validate()) {
       try {
-        // Transform the form data to match the backend DTO structure
-        const mealData = {
-          title: formData.title,
-          description: `${formData.dietType} diet plan with ${formData.calories} calories daily`,
-          startDate: formData.startDate.toISOString().split('T')[0],
-          endDate: formData.endDate.toISOString().split('T')[0],
-          meals: formData.meals
-        };
-
-        await mealService.createMeal(mealData);
+        setIsSubmitting(true);
+        await mealService.updateMeal(id, formData);
         navigate('/meal-planner');
       } catch (error) {
-        console.error('Error creating meal plan:', error);
-        // You might want to show an error message to the user here
+        console.error('Error updating meal plan:', error);
+        setError('Failed to update meal plan');
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -103,6 +121,38 @@ const AddMeal = () => {
     }));
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-center h-[60vh]">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+              <div className="absolute top-0 left-0 animate-ping rounded-full h-12 w-12 bg-indigo-200 opacity-75"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <p className="text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -118,10 +168,10 @@ const AddMeal = () => {
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
                   <Utensils className="mr-2" size={24} />
-                  Create New Meal Plan
+                  Edit Meal Plan
                 </h1>
                 <p className="text-sm text-indigo-600/70 mt-1">
-                  Plan your meals for the upcoming week
+                  Update your meal plan details and schedule
                 </p>
               </div>
             </div>
@@ -151,25 +201,15 @@ const AddMeal = () => {
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-indigo-700">
-                  Diet Type *
+                  Description
                 </label>
-                <select
-                  value={formData.dietType}
-                  onChange={(e) => setFormData({...formData, dietType: e.target.value})}
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    errors.dietType 
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500'
-                  } bg-white text-indigo-900`}
-                >
-                  <option value="">Select diet type</option>
-                  {dietTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-                {errors.dietType && (
-                  <p className="text-sm text-red-500">{errors.dietType}</p>
-                )}
+                <input
+                  type="text"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Enter meal plan description"
+                  className="w-full px-4 py-2 rounded-lg border border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-indigo-900 placeholder-indigo-300"
+                />
               </div>
 
               <div className="md:col-span-2 space-y-2">
@@ -199,26 +239,6 @@ const AddMeal = () => {
                 {errors.startDate && (
                   <p className="text-sm text-red-500">{errors.startDate}</p>
                 )}
-              </div>
-
-              <div className="md:col-span-2 space-y-2">
-                <label className="block text-sm font-medium text-indigo-700">
-                  Daily Calories Target
-                </label>
-                <div className="flex items-center space-x-4">
-                  <input
-                    type="range"
-                    min="1200"
-                    max="3000"
-                    step="100"
-                    value={formData.calories}
-                    onChange={(e) => setFormData({...formData, calories: parseInt(e.target.value)})}
-                    className="w-full accent-indigo-500"
-                  />
-                  <span className="text-indigo-700 min-w-[80px] text-right font-medium">
-                    {formData.calories} kcal
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -267,11 +287,21 @@ const AddMeal = () => {
               </button>
               <button
                 type="submit"
-                className="group relative px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg flex items-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 overflow-hidden"
+                disabled={isSubmitting}
+                className="group relative px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg flex items-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
                 <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
-                <Check className="mr-2" size={18} />
-                Create Meal Plan
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2" size={18} />
+                    Update Meal Plan
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -281,4 +311,4 @@ const AddMeal = () => {
   );
 };
 
-export default AddMeal;
+export default EditMeal; 
