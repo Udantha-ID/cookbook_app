@@ -1,5 +1,5 @@
 # Dependencies
-/node_modules
+/node_modules/*
 /.pnp
 .pnp.js
 
@@ -12,8 +12,6 @@
 
 # Misc
 .DS_Store
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -84,3 +82,5 @@ public
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+config.bat
+node_modules
