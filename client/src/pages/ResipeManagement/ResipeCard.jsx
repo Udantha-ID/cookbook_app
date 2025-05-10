@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Heart, MessageSquare, Share2, Bookmark, Clock, User } from 'lucide-react';
+import { MoreHorizontal, Heart, MessageSquare, Share2, Bookmark, Clock, User, Trash2 } from 'lucide-react';
+import axios from 'axios';
 
-export default function RecipeCard({ recipe = {} }) {
+export default function RecipeCard({ recipe = {}, onDelete }) {
   const navigate = useNavigate();
-  const [likes, setLikes] = useState(recipe.likes || 189);
+  const [likes, setLikes] = useState(recipe.likes || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [comments, setComments] = useState([
     { id: 1, user: "Jane Smith", avatar: "/api/placeholder/40/40", content: "These look amazing! Will try the recipe this weekend.", time: "2h", likes: 3 },
     { id: 2, user: "Robert Lee", avatar: "/api/placeholder/40/40", content: "I made these yesterday. So good!", time: "1d", likes: 8 }
@@ -23,7 +25,8 @@ export default function RecipeCard({ recipe = {} }) {
     author: recipe.author || 'Mike Johnson',
     date: recipe.date || 'Mar 14, 2024',
     readTime: recipe.readTime || '30 min',
-    tags: recipe.tags || ['dessert', 'baking', 'easy']
+    tags: recipe.tags || ['dessert', 'baking', 'easy'],
+    imageUrls: recipe.imageUrls || []
   };
 
   const handleLike = () => {
@@ -33,6 +36,23 @@ export default function RecipeCard({ recipe = {} }) {
 
   const handleSave = () => {
     setIsSaved(!isSaved);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this recipe?')) {
+      try {
+        setIsDeleting(true);
+        await axios.delete(`http://localhost:8095/api/v1/recipe/delete/${recipe.id}`);
+        if (onDelete) {
+          onDelete(recipe.id);
+        }
+      } catch (error) {
+        console.error('Error deleting recipe:', error);
+        alert('Failed to delete recipe. Please try again.');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
   };
 
   const handleAddComment = (e) => {
@@ -58,6 +78,48 @@ export default function RecipeCard({ recipe = {} }) {
     e.preventDefault();
     navigate(`/recipe/${recipeData.id}`);
   };
+
+  // Function to get correct image URL
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) {
+      console.log('No image URL provided');
+      return null;
+    }
+    
+    console.log('Processing image URL:', imageUrl);
+    
+    // If it's already a full URL, return as is
+    if (imageUrl.startsWith('http')) {
+      console.log('Using full URL:', imageUrl);
+      return imageUrl;
+    }
+    
+    // If it's a relative path starting with /uploads, add the base URL
+    if (imageUrl.startsWith('/uploads')) {
+      const fullUrl = `http://localhost:8095${imageUrl}`;
+      console.log('Created full URL:', fullUrl);
+      return fullUrl;
+    }
+    
+    // If it's just a filename, assume it's in uploads directory
+    const fullUrl = `http://localhost:8095/uploads/${imageUrl}`;
+    console.log('Created full URL from filename:', fullUrl);
+    return fullUrl;
+  };
+
+  // Function to handle image error
+  const handleImageError = (e) => {
+    const failedUrl = e.target.src;
+    console.error('Image failed to load:', failedUrl);
+    console.error('Original image URL:', e.target.getAttribute('data-original-url'));
+    
+    e.target.onerror = null; // Prevent infinite loop
+    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23CCCCCC'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z'/%3E%3C/svg%3E";
+    e.target.className = "w-full h-48 object-contain bg-gray-100 p-2 rounded-lg";
+  };
+
+  // Debug log for recipe data
+  console.log('Recipe data:', recipeData);
 
   return (
     <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden my-8 transition-all duration-300 hover:shadow-2xl border border-white/20">
@@ -103,9 +165,13 @@ export default function RecipeCard({ recipe = {} }) {
                 Share recipe
               </button>
               <div className="border-t border-gray-100">
-                <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50/50 text-red-500 transition-colors">
-                  <User size={18} className="mr-3" />
-                  Delete
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50/50 text-red-500 transition-colors"
+                >
+                  <Trash2 size={18} className="mr-3" />
+                  <span>{isDeleting ? 'Deleting...' : 'Delete Recipe'}</span>
                 </button>
               </div>
             </div>
@@ -128,36 +194,39 @@ export default function RecipeCard({ recipe = {} }) {
         </div>
       </div>
 
-      {/* Recipe image - clickable */}
-      <div 
-        className="relative w-full h-72 overflow-hidden group cursor-pointer"
-        onClick={navigateToDetail}
-        role="button"
-        tabIndex={0}
-        aria-label={`View ${recipeData.title} recipe details`}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            navigateToDetail(e);
-          }
-        }}
-      >
-        <img 
-          src="/api/placeholder/600/400" 
-          alt={recipeData.title} 
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSave();
-          }}
-          className={`absolute top-4 right-4 p-2.5 rounded-full backdrop-blur-md transition-all ${
-            isSaved ? 'bg-red-500 text-white shadow-lg' : 'bg-white/90 text-gray-700 hover:bg-white shadow-md'
-          }`}
-        >
-          <Bookmark size={20} className={isSaved ? 'fill-white' : ''} />
-        </button>
+      {/* Recipe images */}
+      <div className="relative w-full">
+        {recipeData.imageUrls && recipeData.imageUrls.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+            {recipeData.imageUrls.map((imageUrl, index) => {
+              const finalUrl = getImageUrl(imageUrl);
+              
+              return (
+                <div key={index} className="relative group" style={{ paddingTop: '75%' }}> {/* 4:3 aspect ratio */}
+                  <div className="absolute inset-0">
+                    <img 
+                      src={finalUrl}
+                      alt={`Recipe ${index + 1}`}
+                      className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                      onError={handleImageError}
+                      onLoad={() => console.log(`Image ${index} loaded successfully:`, finalUrl)}
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg"></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-4">
+            <div className="relative" style={{ paddingTop: '75%' }}> {/* 4:3 aspect ratio */}
+              <div className="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center">
+                <span className="text-gray-500">No images available</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats and actions */}
