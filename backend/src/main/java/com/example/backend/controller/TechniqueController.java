@@ -39,7 +39,8 @@ public class TechniqueController {
     }
 
     @PutMapping(path = "/update/{id}")
-    public String updateTechnique(@RequestBody TechniqueDTO techniqueDTO) {
+    public String updateTechnique(@PathVariable(value = "id") Long techniqueId, @RequestBody TechniqueDTO techniqueDTO) {
+        techniqueDTO.setTechniqueId(techniqueId);
         String message = techniqueService.updateTechnique(techniqueDTO);
         return message;
     }

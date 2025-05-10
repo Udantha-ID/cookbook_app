@@ -1,69 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, ChevronDown, ChevronUp, Play, Award, Heart, MessageCircle, Bookmark, Edit, Trash2 } from 'lucide-react';
+import { 
+  Search, Filter, ChevronDown, ChevronUp, 
+  Award, Heart, MessageCircle, Bookmark, 
+  Edit, Trash2 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { techniqueService } from '../../services/techniqueService';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Techniques = () => {
   const navigate = useNavigate();
-  const [techniques, setTechniques] = useState([
-    {
-      id: 1,
-      title: "Perfect Poached Eggs",
-      description: "Learn the art of poaching eggs to achieve a silky yolk and tender white.",
-      difficulty: "beginner",
-      author: { name: "Chef John" },
-      imageUrl: "/images/poached-eggs.jpg",
-      steps: [
-        "Fill a saucepan with water and bring to a gentle simmer.",
-        "Add a splash of vinegar to the water.",
-        "Crack an egg into a small bowl, then gently slide it into the water.",
-        "Cook for 3-4 minutes until the white is set but yolk is runny.",
-        "Remove with a slotted spoon and drain on paper towel."
-      ],
-      likes: 125,
-      comments: ["Great technique!", "Worked perfectly!"],
-      saved: false
-    },
-    {
-      id: 2,
-      title: "Searing Steak",
-      description: "Master the technique of searing steak for a perfect crust and juicy interior.",
-      difficulty: "intermediate",
-      author: { name: "Chef Maria" },
-      imageUrl: "/images/seared-steak.jpg",
-      steps: [
-        "Pat the steak dry and season generously with salt and pepper.",
-        "Heat a cast-iron skillet until smoking hot.",
-        "Add a high-smoke-point oil and place the steak in the pan.",
-        "Sear for 3-4 minutes per side for medium-rare.",
-        "Rest the steak for 5 minutes before slicing."
-      ],
-      likes: 89,
-      comments: ["Love the crust this gives!", "Tips for thicker cuts?"],
-      saved: false
-    },
-    {
-      id: 3,
-      title: "Sourdough Bread",
-      description: "Create artisan sourdough with a crispy crust and airy crumb.",
-      difficulty: "advanced",
-      author: { name: "Baker Tom" },
-      imageUrl: "/images/sourdough.jpg",
-      steps: [
-        "Mix starter, flour, water, and salt to form a dough.",
-        "Perform stretch and folds every 30 minutes for 3 hours.",
-        "Shape the dough and let it proof overnight in the fridge.",
-        "Preheat a Dutch oven to 450°F and bake for 45 minutes."
-      ],
-      likes: 203,
-      comments: ["Best bread recipe ever!", "How to maintain starter?"],
-      saved: false
-    }
-  ]);
+  const [techniques, setTechniques] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
   const [newComment, setNewComment] = useState('');
+
+  useEffect(() => {
+    fetchTechniques();
+  }, []);
+
+  const fetchTechniques = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await techniqueService.getAllTechniques();
+      setTechniques(data.map(tech => ({
+        ...tech,
+        comments: tech.comments || [],
+        likes: tech.likes || 0,
+        saved: tech.saved || false,
+        steps: tech.steps || [],
+        author: tech.author || { name: 'Anonymous' }
+      })));
+    } catch (err) {
+      setError('Failed to load techniques');
+      toast.error('Failed to fetch techniques');
+      console.error('Fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleExpanded = (id) => {
     setExpandedId(expandedId === id ? null : id);
@@ -71,22 +52,31 @@ const Techniques = () => {
 
   const handleLike = (id) => {
     setTechniques(techniques.map(tech => 
-      tech.id === id ? { ...tech, likes: tech.likes + 1 } : tech
+      tech.techniqueId === id ? { 
+        ...tech, 
+        likes: (tech.likes || 0) + 1 
+      } : tech
     ));
   };
 
   const handleComment = (id) => {
-    if (newComment.trim()) {
-      setTechniques(techniques.map(tech => 
-        tech.id === id ? { ...tech, comments: [...tech.comments, newComment] } : tech
-      ));
-      setNewComment('');
-    }
+    if (!newComment.trim()) return;
+    
+    setTechniques(techniques.map(tech => 
+      tech.techniqueId === id ? { 
+        ...tech, 
+        comments: [...(tech.comments || []), newComment] 
+      } : tech
+    ));
+    setNewComment('');
   };
 
   const handleSave = (id) => {
     setTechniques(techniques.map(tech => 
-      tech.id === id ? { ...tech, saved: !tech.saved } : tech
+      tech.techniqueId === id ? { 
+        ...tech, 
+        saved: !tech.saved 
+      } : tech
     ));
   };
 
@@ -94,16 +84,23 @@ const Techniques = () => {
     navigate(`/edit-technique/${id}`);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this technique?')) {
-      setTechniques(techniques.filter(tech => tech.id !== id));
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this technique?')) return;
+    
+    try {
+      await techniqueService.deleteTechnique(id);
+      setTechniques(techniques.filter(tech => tech.techniqueId !== id));
+      toast.success('Technique deleted');
+    } catch (err) {
+      toast.error('Delete failed');
+      console.error('Delete error:', err);
     }
   };
 
-  const filteredTechniques = techniques.filter(technique => {
-    const matchesSearch = technique.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         technique.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDifficulty = difficultyFilter === 'all' || technique.difficulty === difficultyFilter;
+  const filteredTechniques = techniques.filter(tech => {
+    const matchesSearch = tech.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         tech.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesDifficulty = difficultyFilter === 'all' || tech.difficultyLevel === difficultyFilter;
     return matchesSearch && matchesDifficulty;
   });
 
@@ -114,13 +111,12 @@ const Techniques = () => {
     { value: 'advanced', label: 'Advanced' }
   ];
 
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+      transition: { staggerChildren: 0.1 }
     }
   };
 
@@ -133,37 +129,67 @@ const Techniques = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400 mx-auto mb-4"></div>
+          <p className="text-sky-600/80">Loading techniques...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold text-sky-900 mb-4">Error Loading Techniques</h2>
+          <p className="text-sky-600/80 mb-6">{error}</p>
+          <button
+            onClick={fetchTechniques}
+            className="bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-500 hover:to-indigo-500 text-white py-2.5 px-6 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="pt-24 pb-16 bg-gradient-to-b from-orange-50 to-white dark:from-indigo-900 dark:to-gray-800">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-indigo-50">
+      <div className="container mx-auto px-4 py-24">
+        {/* Header */}
         <motion.div 
-          className="mb-8"
+          className="mb-12 text-center"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-4xl font-bold mb-2 text-cyan-600 dark:text-cyan-300">Cooking Techniques</h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Master essential cooking methods and elevate your culinary creations
-          </p>
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
+            COOKING TECHNIQUES
+          </h1>
+          
         </motion.div>
-        
+
+        {/* Search and Filter */}
         <motion.div 
-          className="flex flex-col md:flex-row gap-4 mb-8"
+          className="flex flex-col md:flex-row gap-4 mb-12 max-w-4xl mx-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
         >
           <div className="relative flex-grow">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={20} className="text-gray-500" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search size={20} className="text-sky-400" />
             </div>
             <input
               type="text"
               placeholder="Search techniques..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all"
+              className="w-full pl-12 pr-4 py-3.5 border border-sky-100 rounded-xl bg-white/95 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all shadow-sm hover:shadow-md"
             />
           </div>
           
@@ -171,7 +197,7 @@ const Techniques = () => {
             <select
               value={difficultyFilter}
               onChange={(e) => setDifficultyFilter(e.target.value)}
-              className="appearance-none w-full py-3 px-4 pr-10 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all"
+              className="appearance-none w-full py-3.5 px-4 pr-12 border border-sky-100 rounded-xl bg-white/95 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all shadow-sm hover:shadow-md"
             >
               {difficulties.map(difficulty => (
                 <option key={difficulty.value} value={difficulty.value}>
@@ -179,128 +205,134 @@ const Techniques = () => {
                 </option>
               ))}
             </select>
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <Filter size={18} className="text-gray-500" />
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+              <Filter size={18} className="text-sky-400" />
             </div>
           </div>
           
           <button 
             onClick={() => navigate('/add-technique')}
-            className="whitespace-nowrap bg-cyan-500 hover:bg-cyan-600 text-white py-3 px-6 rounded-lg transition-colors shadow-md"
+            className="whitespace-nowrap bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-500 hover:to-indigo-500 text-white py-3.5 px-8 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
           >
             Submit Technique
           </button>
         </motion.div>
-        
+
+        {/* Techniques List */}
         <motion.div 
-          className="space-y-6"
+          className="space-y-8 max-w-5xl mx-auto"
           variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
           {filteredTechniques.length > 0 ? (
             filteredTechniques.map((technique) => (
-              <motion.div key={technique.id} variants={itemVariants}>
-                <div className="bg-teal-50 dark:bg-teal-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
+              <motion.div key={technique.techniqueId} variants={itemVariants}>
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-xl transition-all border border-sky-100">
+                  {/* Technique Header */}
                   <div 
                     className="p-6 cursor-pointer"
-                    onClick={() => toggleExpanded(technique.id)}
+                    onClick={() => toggleExpanded(technique.techniqueId)}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div 
-                          className={`p-3 rounded-full ${
-                            technique.difficulty === 'beginner' 
-                              ? 'bg-lime-200 dark:bg-lime-900/30 text-lime-600 dark:text-lime-400' 
-                              : technique.difficulty === 'intermediate'
-                              ? 'bg-amber-200 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-                              : 'bg-pink-200 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
-                          }`}
-                        >
+                        <div className={`p-3 rounded-xl ${
+                          technique.difficultyLevel === 'beginner' 
+                            ? 'bg-sky-50 text-sky-500' 
+                            : technique.difficultyLevel === 'intermediate'
+                            ? 'bg-indigo-50 text-indigo-500'
+                            : 'bg-purple-50 text-purple-500'
+                        }`}>
                           <Award size={24} />
                         </div>
                         <div>
-                          <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">{technique.title}</h3>
-                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-300">
-                            <span className="capitalize">{technique.difficulty}</span>
+                          <h3 className="text-2xl font-semibold text-sky-900">
+                            {technique.title || 'Untitled Technique'}
+                          </h3>
+                          <div className="flex items-center text-sm text-sky-600/80">
+                            <span className="capitalize">{technique.difficultyLevel || 'unknown'}</span>
                             <span className="mx-2">·</span>
-                            <span>By {technique.author.name}</span>
+                            <span>By {technique.author?.name || 'Anonymous'}</span>
                           </div>
                         </div>
                       </div>
                       <div>
-                        {expandedId === technique.id ? (
-                          <ChevronUp size={24} className="text-gray-500 dark:text-gray-300" />
+                        {expandedId === technique.techniqueId ? (
+                          <ChevronUp size={24} className="text-sky-400" />
                         ) : (
-                          <ChevronDown size={24} className="text-gray-500 dark:text-gray-300" />
+                          <ChevronDown size={24} className="text-sky-400" />
                         )}
                       </div>
                     </div>
                   </div>
-                  
+
+                  {/* Expandable Content */}
                   <motion.div 
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ 
-                      height: expandedId === technique.id ? 'auto' : 0,
-                      opacity: expandedId === technique.id ? 1 : 0
+                      height: expandedId === technique.techniqueId ? 'auto' : 0,
+                      opacity: expandedId === technique.techniqueId ? 1 : 0
                     }}
                     transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-6 pb-6 pt-2 border-t border-gray-200 dark:border-gray-600">
-                      <div className="flex flex-col lg:flex-row gap-6">
+                    <div className="px-6 pb-6 pt-2 border-t border-sky-100">
+                      <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Left Column */}
                         <div className="lg:w-1/3">
                           {technique.imageUrl && (
-                            <div className="mb-4 rounded-lg overflow-hidden">
+                            <div className="mb-6 rounded-xl overflow-hidden shadow-md">
                               <img
                                 src={technique.imageUrl}
                                 alt={technique.title}
-                                className="w-full h-48 object-cover"
+                                className="w-full h-56 object-cover"
                               />
                             </div>
                           )}
-                          <p className="text-gray-700 dark:text-gray-200 mb-4">
-                            {technique.description}
+                          <p className="text-sky-700/80 mb-6 leading-relaxed">
+                            {technique.description || 'No description provided.'}
                           </p>
-                          <div className="flex items-center space-x-4 mb-4">
+                          
+                          {/* Interaction Buttons */}
+                          <div className="flex items-center space-x-6 mb-6">
                             <button 
-                              onClick={() => handleLike(technique.id)}
-                              className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-cyan-500"
+                              onClick={() => handleLike(technique.techniqueId)}
+                              className="flex items-center space-x-2 text-sky-600/80 hover:text-sky-500 transition-colors"
                             >
                               <Heart size={20} fill={technique.likes > 0 ? "currentColor" : "none"} />
-                              <span>{technique.likes}</span>
+                              <span>{technique.likes || 0}</span>
                             </button>
-                            <button 
-                              className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-cyan-500"
-                            >
+                            <button className="flex items-center space-x-2 text-sky-600/80 hover:text-sky-500 transition-colors">
                               <MessageCircle size={20} />
-                              <span>{technique.comments.length}</span>
+                              <span>{technique.comments?.length || 0}</span>
                             </button>
                             <button 
-                              onClick={() => handleSave(technique.id)}
-                              className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-cyan-500"
+                              onClick={() => handleSave(technique.techniqueId)}
+                              className="flex items-center space-x-2 text-sky-600/80 hover:text-sky-500 transition-colors"
                             >
                               <Bookmark size={20} fill={technique.saved ? "currentColor" : "none"} />
                               <span>{technique.saved ? "Saved" : "Save"}</span>
                             </button>
                           </div>
-                          <div className="mt-4">
+
+                          {/* Comments Section */}
+                          <div className="mt-6">
                             <input
                               type="text"
                               placeholder="Add a comment..."
                               value={newComment}
                               onChange={(e) => setNewComment(e.target.value)}
-                              className="w-full py-2 px-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all"
+                              className="w-full py-2.5 px-4 border border-sky-100 rounded-xl bg-white/95 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all"
                             />
                             <button
-                              onClick={() => handleComment(technique.id)}
-                              className="mt-2 bg-cyan-500 hover:bg-cyan-600 text-white py-2 px-4 rounded-lg transition-colors shadow-md"
+                              onClick={() => handleComment(technique.techniqueId)}
+                              className="mt-3 bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-500 hover:to-indigo-500 text-white py-2.5 px-6 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                             >
                               Post Comment
                             </button>
-                            <div className="mt-4 space-y-2">
-                              {technique.comments.map((comment, index) => (
-                                <p key={index} className="text-gray-600 dark:text-gray-300 text-sm">
+                            <div className="mt-4 space-y-3">
+                              {technique.comments?.map((comment, index) => (
+                                <p key={index} className="text-sky-700/80 text-sm bg-sky-50/50 p-3 rounded-lg">
                                   {comment}
                                 </p>
                               ))}
@@ -308,33 +340,38 @@ const Techniques = () => {
                           </div>
                         </div>
                         
+                        {/* Right Column - Steps */}
                         <div className="lg:w-2/3">
-                          <h4 className="text-lg font-medium mb-4 text-gray-800 dark:text-gray-100">Step-by-Step Instructions</h4>
+                          <h4 className="text-xl font-semibold mb-6 text-sky-900">
+                            Step-by-Step Instructions
+                          </h4>
                           <ol className="space-y-6">
-                            {technique.steps.map((step, index) => (
+                            {(technique.steps || []).map((step, index) => (
                               <li key={index} className="flex">
-                                <div className="h-8 w-8 rounded-full bg-cyan-500 text-white flex items-center justify-center flex-shrink-0 mr-4 mt-0.5">
+                                <div className="h-8 w-8 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 text-white flex items-center justify-center flex-shrink-0 mr-4 mt-0.5 shadow-md">
                                   <span>{index + 1}</span>
                                 </div>
                                 <div className="pt-1">
-                                  <p className="text-gray-700 dark:text-gray-200 leading-relaxed">{step}</p>
+                                  <p className="text-sky-700/80 leading-relaxed">
+                                    {step}
+                                  </p>
                                 </div>
                               </li>
                             ))}
                           </ol>
                           
-                          {/* Added Edit and Delete buttons section */}
+                          {/* Edit/Delete Buttons */}
                           <div className="mt-8 flex space-x-4">
                             <button
-                              onClick={() => handleEdit(technique.id)}
-                              className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors shadow-md"
+                              onClick={() => handleEdit(technique.techniqueId)}
+                              className="flex items-center space-x-2 bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-500 hover:to-indigo-500 text-white py-2.5 px-6 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                             >
                               <Edit size={18} />
                               <span>Edit Technique</span>
                             </button>
                             <button
-                              onClick={() => handleDelete(technique.id)}
-                              className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-colors shadow-md"
+                              onClick={() => handleDelete(technique.techniqueId)}
+                              className="flex items-center space-x-2 bg-gradient-to-r from-red-400 to-pink-400 hover:from-red-500 hover:to-pink-500 text-white py-2.5 px-6 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                             >
                               <Trash2 size={18} />
                               <span>Delete Technique</span>
@@ -349,12 +386,12 @@ const Techniques = () => {
             ))
           ) : (
             <motion.div 
-              className="text-center py-16"
+              className="text-center py-16 bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-100"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-4">
+              <p className="text-xl text-sky-600/80 mb-6">
                 No techniques found matching your criteria.
               </p>
               <button 
@@ -362,7 +399,7 @@ const Techniques = () => {
                   setSearchTerm('');
                   setDifficultyFilter('all');
                 }}
-                className="border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg transition-colors"
+                className="bg-gradient-to-r from-sky-400 to-indigo-400 hover:from-sky-500 hover:to-indigo-500 text-white py-2.5 px-6 rounded-xl transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
               >
                 Reset Filters
               </button>

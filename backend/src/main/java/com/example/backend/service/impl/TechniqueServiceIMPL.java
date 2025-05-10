@@ -48,18 +48,38 @@ public class TechniqueServiceIMPL implements TechniqueService {
 
     @Override
     public String updateTechnique(TechniqueDTO techniqueDTO) {
-        if (techniqueRepo.existsById(techniqueDTO.getTechniqueId())) {
+        if (techniqueDTO.getTechniqueId() == null) {
+            return "Technique update failed. No technique ID provided.";
+        }
+
+        if (!techniqueRepo.existsById(techniqueDTO.getTechniqueId())) {
+            return "Technique update failed. No technique found with ID: " + techniqueDTO.getTechniqueId();
+        }
+
+        try {
             Technique technique = techniqueRepo.getReferenceById(techniqueDTO.getTechniqueId());
-            technique.setTitle(techniqueDTO.getTitle());
-            technique.setDescription(techniqueDTO.getDescription());
-            technique.setImageUrl(techniqueDTO.getImageUrl());  // Changed from setVideoTutorial to setImageUrl
-            technique.setDifficultyLevel(techniqueDTO.getDifficultyLevel());
-            technique.setTags(techniqueDTO.getTags());
+            
+            // Only update fields that are not null
+            if (techniqueDTO.getTitle() != null) {
+                technique.setTitle(techniqueDTO.getTitle());
+            }
+            if (techniqueDTO.getDescription() != null) {
+                technique.setDescription(techniqueDTO.getDescription());
+            }
+            if (techniqueDTO.getImageUrl() != null) {
+                technique.setImageUrl(techniqueDTO.getImageUrl());
+            }
+            if (techniqueDTO.getDifficultyLevel() != null) {
+                technique.setDifficultyLevel(techniqueDTO.getDifficultyLevel());
+            }
+            if (techniqueDTO.getTags() != null) {
+                technique.setTags(techniqueDTO.getTags());
+            }
 
             techniqueRepo.save(technique);
             return "Technique updated successfully!";
-        } else {
-            return "Technique update failed. No technique found with ID: " + techniqueDTO.getTechniqueId();
+        } catch (Exception e) {
+            return "Technique update failed. Error: " + e.getMessage();
         }
     }
 
