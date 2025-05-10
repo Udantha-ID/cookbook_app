@@ -79,47 +79,34 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
     navigate(`/recipe/${recipeData.id}`);
   };
 
-  // Function to get correct image URL
-  const getImageUrl = (imageUrl) => {
-    if (!imageUrl) {
-      console.log('No image URL provided');
-      return null;
-    }
-    
-    console.log('Processing image URL:', imageUrl);
-    
-    // If it's already a full URL, return as is
-    if (imageUrl.startsWith('http')) {
-      console.log('Using full URL:', imageUrl);
-      return imageUrl;
-    }
-    
-    // If it's a relative path starting with /uploads, add the base URL
-    if (imageUrl.startsWith('/uploads')) {
-      const fullUrl = `http://localhost:8095${imageUrl}`;
-      console.log('Created full URL:', fullUrl);
-      return fullUrl;
-    }
-    
-    // If it's just a filename, assume it's in uploads directory
-    const fullUrl = `http://localhost:8095/uploads/${imageUrl}`;
-    console.log('Created full URL from filename:', fullUrl);
-    return fullUrl;
-  };
-
   // Function to handle image error
   const handleImageError = (e) => {
-    const failedUrl = e.target.src;
-    console.error('Image failed to load:', failedUrl);
-    console.error('Original image URL:', e.target.getAttribute('data-original-url'));
-    
+    console.error('Image failed to load:', e.target.src);
     e.target.onerror = null; // Prevent infinite loop
     e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23CCCCCC'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z'/%3E%3C/svg%3E";
     e.target.className = "w-full h-48 object-contain bg-gray-100 p-2 rounded-lg";
   };
 
-  // Debug log for recipe data
-  console.log('Recipe data:', recipeData);
+  // Function to get correct image URL
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return null;
+    
+    // If it's already a full URL, return as is
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    // If it's a relative path starting with /uploads, add the base URL
+    if (imageUrl.startsWith('/uploads')) {
+      return `http://localhost:8095${imageUrl}`;
+    }
+    
+    // If it's just a filename, assume it's in uploads directory
+    return `http://localhost:8095/uploads/${imageUrl}`;
+  };
+
+  // Debug log for images
+  console.log('Recipe image URLs:', recipeData.imageUrls);
 
   return (
     <div className="w-full max-w-3xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden my-8 transition-all duration-300 hover:shadow-2xl border border-white/20">
@@ -200,30 +187,27 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             {recipeData.imageUrls.map((imageUrl, index) => {
               const finalUrl = getImageUrl(imageUrl);
+              console.log(`Processing image ${index}:`, { original: imageUrl, final: finalUrl });
               
               return (
-                <div key={index} className="relative group" style={{ paddingTop: '75%' }}> {/* 4:3 aspect ratio */}
-                  <div className="absolute inset-0">
-                    <img 
-                      src={finalUrl}
-                      alt={`Recipe ${index + 1}`}
-                      className="absolute inset-0 w-full h-full object-cover rounded-lg"
-                      onError={handleImageError}
-                      onLoad={() => console.log(`Image ${index} loaded successfully:`, finalUrl)}
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg"></div>
-                  </div>
+                <div key={index} className="relative group">
+                  <img 
+                    src={finalUrl}
+                    alt={`Recipe ${index + 1}`}
+                    className="w-full h-48 object-cover rounded-lg"
+                    onError={handleImageError}
+                    onLoad={() => console.log(`Image ${index} loaded successfully:`, finalUrl)}
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 rounded-lg"></div>
                 </div>
               );
             })}
           </div>
         ) : (
           <div className="p-4">
-            <div className="relative" style={{ paddingTop: '75%' }}> {/* 4:3 aspect ratio */}
-              <div className="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center">
-                <span className="text-gray-500">No images available</span>
-              </div>
+            <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+              <span className="text-gray-500">No images available</span>
             </div>
           </div>
         )}
