@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -19,5 +20,5 @@ public class RecipeDTO {
     private List<String> steps;
     private String category;
     private Double rating;
-    private String mediaUrl;
+    private Set<String> imageUrls;
 }

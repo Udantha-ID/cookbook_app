@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const RecipeForm = () => {
@@ -10,8 +10,7 @@ const RecipeForm = () => {
     steps: [''],
     category: '',
     rating: 0,
-    mediaUrl: null,
-    mediaType: null
+    imageFiles: []
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -60,19 +59,39 @@ const RecipeForm = () => {
 
   // Handle media upload
   const handleMediaUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    
+    // Check if files are images
+    const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
+    if (invalidFiles.length > 0) {
+      setError('Please upload only image files');
+      return;
+    }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const mediaType = file.type.startsWith('image') ? 'image' : 'video';
-      setRecipe(prev => ({
+    // Create preview URLs for the images
+    const newImageFiles = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+
+    setRecipe(prev => ({
+      ...prev,
+      imageFiles: [...prev.imageFiles, ...newImageFiles]
+    }));
+  };
+
+  // Remove image
+  const removeImage = (index) => {
+    setRecipe(prev => {
+      const newImageFiles = [...prev.imageFiles];
+      // Revoke the preview URL to avoid memory leaks
+      URL.revokeObjectURL(newImageFiles[index].preview);
+      newImageFiles.splice(index, 1);
+      return {
         ...prev,
-        mediaUrl: event.target.result,
-        mediaType
-      }));
-    };
-    reader.readAsDataURL(file);
+        imageFiles: newImageFiles
+      };
+    });
   };
 
   // Validate form before submission
@@ -103,25 +122,47 @@ const RecipeForm = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     
     try {
-      // Create recipe data object
-      const recipeData = {
-        title: recipe.title,
-        description: recipe.description,
-        ingredients: recipe.ingredients,
-        steps: recipe.steps,
-        category: recipe.category,
-        rating: recipe.rating,
-        mediaUrl: recipe.mediaUrl
-      };
+      // Create FormData object
+      const formData = new FormData();
+      
+      // Add recipe data
+      formData.append('title', recipe.title.trim());
+      formData.append('description', recipe.description.trim());
+      formData.append('category', recipe.category || '');
+      formData.append('rating', recipe.rating || 0);
+
+      // Add ingredients and steps as JSON strings
+      const filteredIngredients = recipe.ingredients
+        .filter(ing => ing.trim() !== '')
+        .map(ing => ing.trim());
+      formData.append('ingredients', JSON.stringify(filteredIngredients));
+
+      const filteredSteps = recipe.steps
+        .filter(step => step.trim() !== '')
+        .map(step => step.trim());
+      formData.append('steps', JSON.stringify(filteredSteps));
+
+      // Add image files
+      recipe.imageFiles.forEach((imageFile, index) => {
+        formData.append('images', imageFile.file);
+      });
+
+      console.log('Sending recipe data with images...'); // Debug log
 
       // Send data to backend
-      const response = await axios.post('http://localhost:8095/api/v1/recipe/save', recipeData, {
+      const response = await axios.post('http://localhost:8095/api/v1/recipe/save', formData, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'multipart/form-data',
         }
       });
 
@@ -133,9 +174,11 @@ const RecipeForm = () => {
     } catch (error) {
       console.error('Error submitting recipe:', error);
       if (error.code === 'ERR_NETWORK') {
-        setError('Unable to connect to the server. Please check if the server is running.');
+        setError('Unable to connect to the server. Please check if the server is running at http://localhost:8095');
       } else if (error.response) {
-        setError(error.response.data?.message || `Server error: ${error.response.status}`);
+        const errorMessage = error.response.data || 'Server error occurred';
+        setError(typeof errorMessage === 'string' ? errorMessage : 'Failed to save recipe. Please try again.');
+        console.error('Server error details:', error.response.data);
       } else if (error.request) {
         setError('No response from server. Please try again.');
       } else {
@@ -161,13 +204,71 @@ const RecipeForm = () => {
       steps: [''],
       category: '',
       rating: 0,
-      mediaUrl: null,
-      mediaType: null
+      imageFiles: []
     });
   };
 
   // Mock user avatar - use a placeholder instead of external URL
   const userAvatar = "/api/placeholder/40/40";
+
+  // Clean up preview URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      recipe.imageFiles.forEach(imageFile => {
+        URL.revokeObjectURL(imageFile.preview);
+      });
+    };
+  }, [recipe.imageFiles]);
+
+  // Update the image preview section in the render
+  const renderImagePreview = () => (
+    <div className="grid grid-cols-2 gap-4 p-4">
+      {recipe.imageFiles.map((imageFile, index) => (
+        <div key={index} className="relative group">
+          <img 
+            src={imageFile.preview} 
+            alt={`Preview ${index + 1}`} 
+            className="w-full h-48 object-cover rounded-lg"
+          />
+          <button
+            type="button"
+            onClick={() => removeImage(index)}
+            className="absolute top-2 right-2 bg-white/90 text-gray-700 rounded-full p-1.5 hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Update the media upload section in the render
+  const renderMediaUpload = () => (
+    <div className="border-2 border-dashed border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 transition-colors">
+      {recipe.imageFiles.length > 0 ? (
+        renderImagePreview()
+      ) : (
+        <label className="flex flex-col items-center justify-center p-8 cursor-pointer">
+          <div className="p-4 rounded-full bg-blue-50 text-blue-500 mb-3">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p className="text-gray-600 font-medium">Add Photos</p>
+          <p className="text-sm text-gray-400 mt-1">Drag and drop or click to browse</p>
+          <input
+            type="file"
+            className="sr-only"
+            accept="image/*"
+            multiple
+            onChange={handleMediaUpload}
+          />
+        </label>
+      )}
+    </div>
+  );
 
   return (
   <div className="w-full max-w-2xl mx-auto my-6">
@@ -293,50 +394,7 @@ const RecipeForm = () => {
             </div>
 
             {/* Media Upload */}
-            <div className="border-2 border-dashed border-gray-200 rounded-xl overflow-hidden hover:border-blue-400 transition-colors">
-              {recipe.mediaUrl ? (
-                <div className="relative group">
-                  {recipe.mediaType === 'image' ? (
-                    <img 
-                      src={recipe.mediaUrl} 
-                      alt="Preview" 
-                      className="w-full h-auto max-h-96 object-cover"
-                    />
-                  ) : (
-                    <video 
-                      src={recipe.mediaUrl} 
-                      controls 
-                      className="w-full h-auto max-h-96 object-cover"
-                    />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setRecipe(prev => ({ ...prev, mediaUrl: null, mediaType: null }))}
-                    className="absolute top-3 right-3 bg-white/90 text-gray-700 rounded-full p-1.5 hover:bg-white shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center p-8 cursor-pointer">
-                  <div className="p-4 rounded-full bg-blue-50 text-blue-500 mb-3">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600 font-medium">Add Photos/Videos</p>
-                  <p className="text-sm text-gray-400 mt-1">Drag and drop or click to browse</p>
-                  <input
-                    type="file"
-                    className="sr-only"
-                    accept="image/*, video/*"
-                    onChange={handleMediaUpload}
-                  />
-                </label>
-              )}
-            </div>
+            {renderMediaUpload()}
 
             {/* Ingredients */}
             <div className="bg-gray-50 rounded-xl p-5">
