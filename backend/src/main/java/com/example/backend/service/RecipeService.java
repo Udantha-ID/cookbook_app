@@ -8,11 +8,11 @@ import java.util.List;
 
 public interface RecipeService {
 
-    RecipeDTO saveRecipe(RecipeDTO recipeDTO, List<MultipartFile> images) throws IOException;
+    String saveRecipe(RecipeDTO recipeDTO, List<MultipartFile> images) throws IOException;
 
     List<RecipeDTO> getAllRecipes();
 
     RecipeDTO updateRecipe(Long id, RecipeDTO recipeDTO);
 
-    void deleteRecipe(Long id);
+    String deleteRecipe(Long id);
 }
