@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import {
   HomeIcon,
   CalendarIcon,
@@ -11,11 +11,33 @@ import {
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const handleLoginToggle = () => {
-    setIsLoggedIn(!isLoggedIn);
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+      // You can fetch user details here if needed
+    }
+  }, []);
+
+  const handleLogout = () => {
+    // Clear all auth-related data
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    setUser(null);
     setMobileMenuOpen(false);
+    // Navigate to login page
+    navigate('/auth');
+  };
+
+  const handleLoginClick = () => {
+    setMobileMenuOpen(false);
+    navigate('/auth');
   };
 
   return (
@@ -49,16 +71,25 @@ const Navbar = () => {
           {/* Right side - Auth buttons */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {isLoggedIn ? (
-              <button
-                onClick={handleLoginToggle}
-                className="p-2 rounded-full text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-colors duration-200 group relative"
-              >
-                <UserCircleIcon className="h-5 w-5" />
-                <span className="absolute left-1/2 -bottom-1 w-0 h-0.5 bg-amber-600 group-hover:w-4/5 group-hover:left-[10%] transition-all duration-300"></span>
-              </button>
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/profile"
+                  className="p-2 rounded-full text-gray-700 hover:bg-amber-50 hover:text-amber-600 transition-colors duration-200 group relative"
+                >
+                  <UserCircleIcon className="h-5 w-5" />
+                  <span className="absolute left-1/2 -bottom-1 w-0 h-0.5 bg-amber-600 group-hover:w-4/5 group-hover:left-[10%] transition-all duration-300"></span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-1 px-4 py-2 rounded-full text-sm font-medium text-amber-600 hover:bg-amber-50 transition-colors duration-200 relative group"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
             ) : (
               <button
-                onClick={handleLoginToggle}
+                onClick={handleLoginClick}
                 className="flex items-center space-x-1 px-4 py-2 rounded-full text-sm font-medium text-amber-600 hover:bg-amber-50 transition-colors duration-200 relative group"
               >
                 <ArrowRightOnRectangleIcon className="h-5 w-5" />
@@ -146,16 +177,25 @@ const Navbar = () => {
           </div>
           <div className="pt-4 pb-3 border-t border-gray-200">
             {isLoggedIn ? (
-              <button
-                onClick={handleLoginToggle}
-                className="w-full flex items-center px-4 py-3 text-base font-medium text-gray-700 hover:bg-amber-50 hover:text-amber-600"
-              >
-                <UserCircleIcon className="h-5 w-5 mr-3" />
-                Profile
-              </button>
+              <>
+                <Link
+                  to="/profile"
+                  className="w-full flex items-center px-4 py-3 text-base font-medium text-gray-700 hover:bg-amber-50 hover:text-amber-600"
+                >
+                  <UserCircleIcon className="h-5 w-5 mr-3" />
+                  Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center px-4 py-3 text-base font-medium text-amber-600 hover:bg-amber-50"
+                >
+                  <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
+                  Logout
+                </button>
+              </>
             ) : (
               <button
-                onClick={handleLoginToggle}
+                onClick={handleLoginClick}
                 className="w-full flex items-center px-4 py-3 text-base font-medium text-amber-600 hover:bg-amber-50"
               >
                 <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />

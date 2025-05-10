@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-const RecipeForm = () => {
+const RecipeForm = ({ onRecipeCreated }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [recipe, setRecipe] = useState({
     title: '',
@@ -14,6 +15,14 @@ const RecipeForm = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/auth');
+    }
+  }, [navigate]);
 
   // Handle text input changes
   const handleChange = (e) => {
@@ -132,6 +141,12 @@ const RecipeForm = () => {
     setError(null);
     
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/auth');
+        return;
+      }
+
       // Create FormData object
       const formData = new FormData();
       
@@ -157,12 +172,11 @@ const RecipeForm = () => {
         formData.append('images', imageFile.file);
       });
 
-      console.log('Sending recipe data with images...'); // Debug log
-
       // Send data to backend
       const response = await axios.post('http://localhost:8095/api/v1/recipe/save', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -170,10 +184,16 @@ const RecipeForm = () => {
         console.log('Recipe created successfully:', response.data);
         alert('Recipe saved successfully!');
         closeModal();
+        if (onRecipeCreated) {
+          onRecipeCreated();
+        }
       }
     } catch (error) {
       console.error('Error submitting recipe:', error);
-      if (error.code === 'ERR_NETWORK') {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+      } else if (error.code === 'ERR_NETWORK') {
         setError('Unable to connect to the server. Please check if the server is running at http://localhost:8095');
       } else if (error.response) {
         const errorMessage = error.response.data || 'Server error occurred';

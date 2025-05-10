@@ -5,29 +5,47 @@ import RecipeCard from './ResipeCard';
 import Navbar from '../../components/Navbar';
 import LeftSideBar from '../../components/LeftSideBar';
 import RightSideBar from '../../components/RightSideBar';
+import { useNavigate } from 'react-router-dom';
 
 function HomeFeed() {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/auth');
+      return;
+    }
+    setIsAuthenticated(true);
+    fetchRecipes();
+  }, [navigate]);
 
   // Fetch recipes from backend
   const fetchRecipes = async () => {
     try {
-      const response = await axios.get('http://localhost:8095/api/v1/recipe/get-all');
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:8095/api/v1/recipe/get-all', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       setRecipes(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching recipes:', error);
-      setError('Failed to load recipes. Please try again later.');
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+      } else {
+        setError('Failed to load recipes. Please try again later.');
+      }
       setLoading(false);
     }
   };
-
-  // Fetch recipes when component mounts
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
 
   // Handle recipe creation success
   const handleRecipeCreated = () => {
@@ -35,9 +53,29 @@ function HomeFeed() {
   };
 
   // Handle recipe deletion
-  const handleRecipeDeleted = (recipeId) => {
-    setRecipes(prevRecipes => prevRecipes.filter(recipe => recipe.id !== recipeId));
+  const handleRecipeDeleted = async (recipeId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:8095/api/v1/recipe/${recipeId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setRecipes(prevRecipes => prevRecipes.filter(recipe => recipe.id !== recipeId));
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+      } else {
+        setError('Failed to delete recipe. Please try again later.');
+      }
+    }
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100'>
@@ -78,15 +116,15 @@ function HomeFeed() {
                     key={recipe.id} 
                     recipe={{
                       ...recipe,
-                      author: 'Anonymous', // You can add author field to your backend
-                      date: new Date().toLocaleDateString('en-US', {
+                      author: recipe.author || 'Anonymous',
+                      date: new Date(recipe.createdAt).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric'
                       }),
-                      readTime: `${recipe.steps.length * 2} min`, // Calculate read time based on steps
+                      readTime: `${recipe.steps.length * 2} min`,
                       tags: [recipe.category.toLowerCase()],
-                      likes: 0 // You can add likes functionality later
+                      likes: recipe.likes || 0
                     }}
                     onDelete={handleRecipeDeleted}
                   />
