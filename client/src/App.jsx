@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 import Techniques from './pages/CookingTech/Techniques';
 import AddCookingTech from './pages/CookingTech/AddCookingTech';
+import EditCookingTech from './pages/CookingTech/EditCookingTech';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -25,6 +26,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Techniques />} />
           <Route path="/add-technique" element={<AddCookingTech/>} />
+          <Route path="/edit-technique/:id" element={<EditCookingTech/>} />
           <Route path="/techniques" element={<Techniques />} />
         </Routes>
       </Router>
