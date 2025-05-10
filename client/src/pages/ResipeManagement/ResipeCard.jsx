@@ -42,13 +42,27 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
     if (window.confirm('Are you sure you want to delete this recipe?')) {
       try {
         setIsDeleting(true);
-        await axios.delete(`http://localhost:8095/api/v1/recipe/delete/${recipe.id}`);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/auth');
+          return;
+        }
+        await axios.delete(`http://localhost:8095/api/v1/recipe/delete/${recipe.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (onDelete) {
           onDelete(recipe.id);
         }
       } catch (error) {
         console.error('Error deleting recipe:', error);
-        alert('Failed to delete recipe. Please try again.');
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/auth');
+        } else {
+          alert('Failed to delete recipe. Please try again.');
+        }
       } finally {
         setIsDeleting(false);
       }
