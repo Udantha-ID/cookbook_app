@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const RecipeForm = ({ onRecipeCreated }) => {
+const RecipeForm = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [recipe, setRecipe] = useState({
     title: '',
@@ -170,9 +170,6 @@ const RecipeForm = ({ onRecipeCreated }) => {
         console.log('Recipe created successfully:', response.data);
         alert('Recipe saved successfully!');
         closeModal();
-        if (onRecipeCreated) {
-          onRecipeCreated(); // Notify parent component
-        }
       }
     } catch (error) {
       console.error('Error submitting recipe:', error);
