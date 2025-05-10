@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal, Heart, MessageSquare, Share2, Bookmark, Clock, User } from 'lucide-react';
+import { MoreHorizontal, Heart, MessageSquare, Share2, Bookmark, Clock, User, Trash2 } from 'lucide-react';
+import axios from 'axios';
 
-export default function RecipeCard({ recipe = {} }) {
+export default function RecipeCard({ recipe = {}, onDelete }) {
   const navigate = useNavigate();
-  const [likes, setLikes] = useState(recipe.likes || 189);
+  const [likes, setLikes] = useState(recipe.likes || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [comments, setComments] = useState([
     { id: 1, user: "Jane Smith", avatar: "/api/placeholder/40/40", content: "These look amazing! Will try the recipe this weekend.", time: "2h", likes: 3 },
     { id: 2, user: "Robert Lee", avatar: "/api/placeholder/40/40", content: "I made these yesterday. So good!", time: "1d", likes: 8 }
@@ -33,6 +35,23 @@ export default function RecipeCard({ recipe = {} }) {
 
   const handleSave = () => {
     setIsSaved(!isSaved);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this recipe?')) {
+      try {
+        setIsDeleting(true);
+        await axios.delete(`http://localhost:8095/api/v1/recipe/${recipe.id}`);
+        if (onDelete) {
+          onDelete(recipe.id);
+        }
+      } catch (error) {
+        console.error('Error deleting recipe:', error);
+        alert('Failed to delete recipe. Please try again.');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
   };
 
   const handleAddComment = (e) => {
@@ -103,9 +122,13 @@ export default function RecipeCard({ recipe = {} }) {
                 Share recipe
               </button>
               <div className="border-t border-gray-100">
-                <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50/50 text-red-500 transition-colors">
-                  <User size={18} className="mr-3" />
-                  Delete
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50/50 text-red-500 transition-colors"
+                >
+                  <Trash2 size={18} className="mr-3" />
+                  <span>{isDeleting ? 'Deleting...' : 'Delete Recipe'}</span>
                 </button>
               </div>
             </div>
