@@ -13,35 +13,13 @@ const axiosInstance = axios.create({
 export const techniqueService = {
     async saveTechnique(technique, imageFile) {
         try {
-            let imageUrl = null;
-            
-            if (imageFile) {
-                const formData = new FormData();
-                formData.append('image', imageFile);
-                
-                const uploadResponse = await axios.post(`${API_URL}/upload-image`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    },
-                    onUploadProgress: (progressEvent) => {
-                        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                        console.log(`Upload Progress: ${percentCompleted}%`);
-                    }
-                });
-                
-                if (!uploadResponse.data || !uploadResponse.data.url) {
-                    throw new Error('Invalid response from image upload');
-                }
-                
-                imageUrl = uploadResponse.data.url;
-            }
-            
+            // For now, we'll just use a placeholder image URL since image upload is not implemented
             const techniqueWithImage = {
                 ...technique,
-                imageUrl: imageUrl
+                imageUrl: imageFile ? URL.createObjectURL(imageFile) : null
             };
             
-            const response = await axiosInstance.post('', techniqueWithImage);
+            const response = await axiosInstance.post('/save', techniqueWithImage);
             return response.data;
         } catch (error) {
             console.error('Error saving technique:', error);
@@ -51,7 +29,7 @@ export const techniqueService = {
 
     async getAllTechniques() {
         try {
-            const response = await axiosInstance.get('');
+            const response = await axiosInstance.get('/get-all-techniques');
             return response.data;
         } catch (error) {
             console.error('Error fetching techniques:', error);
@@ -61,31 +39,14 @@ export const techniqueService = {
 
     async updateTechnique(id, technique, imageFile) {
         try {
-            let imageUrl = technique.imageUrl;
-            
-            if (imageFile) {
-                const formData = new FormData();
-                formData.append('image', imageFile);
-                
-                const uploadResponse = await axios.post(`${API_URL}/upload-image`, formData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-                
-                if (!uploadResponse.data || !uploadResponse.data.url) {
-                    throw new Error('Invalid response from image upload');
-                }
-                
-                imageUrl = uploadResponse.data.url;
-            }
-            
+            // For now, we'll just use a placeholder image URL since image upload is not implemented
             const techniqueWithImage = {
                 ...technique,
-                imageUrl: imageUrl
+                techniqueId: parseInt(id),
+                imageUrl: imageFile ? URL.createObjectURL(imageFile) : technique.imageUrl
             };
             
-            const response = await axiosInstance.put(`/${id}`, techniqueWithImage);
+            const response = await axiosInstance.put(`/update/${id}`, techniqueWithImage);
             return response.data;
         } catch (error) {
             console.error('Error updating technique:', error);
@@ -95,7 +56,7 @@ export const techniqueService = {
 
     async deleteTechnique(id) {
         try {
-            const response = await axiosInstance.delete(`/${id}`);
+            const response = await axiosInstance.delete(`/delete/${id}`);
             return response.data;
         } catch (error) {
             console.error('Error deleting technique:', error);
