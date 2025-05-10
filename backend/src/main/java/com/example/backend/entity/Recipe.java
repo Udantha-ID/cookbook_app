@@ -1,13 +1,14 @@
 package com.example.backend.entity;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "Recipe")
@@ -40,6 +41,11 @@ public class Recipe {
 
     private Double rating;
 
-    @Column(name = "media_url")
-    private String mediaUrl;
+    @ElementCollection
+    @CollectionTable(name = "recipe_images", joinColumns = @JoinColumn(name = "recipe_id"))
+    @Column(name = "image_url", length = 1000)
+    private Set<String> imageUrls = new HashSet<>();
+
+    public void setMediaType(String image) {
+    }
 }

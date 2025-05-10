@@ -1,72 +1,86 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.RecipeDTO;
-import com.example.backend.entity.Recipe;
 import com.example.backend.service.RecipeService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/recipe")
-@CrossOrigin
-
+@RequestMapping("/api/v1/recipe")
+@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"}, allowCredentials = "true")
 public class RecipeController {
+
     @Autowired
     private RecipeService recipeService;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @PostMapping("/save")
-    public ResponseEntity<Recipe> createDish(@RequestBody RecipeDTO recipeDTO) {
+    public String saveRecipe(
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam("ingredients") String ingredients,
+            @RequestParam("steps") String steps,
+            @RequestParam("category") String category,
+            @RequestParam(value = "rating", required = false) Double rating,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images) {
         try {
-            Recipe savedRecipe = recipeService.saveRecipe(recipeDTO);
-            return new ResponseEntity<>(savedRecipe, HttpStatus.CREATED);
+            RecipeDTO recipeDTO = new RecipeDTO();
+            recipeDTO.setTitle(title);
+            recipeDTO.setDescription(description);
+            recipeDTO.setIngredients(objectMapper.readValue(ingredients, List.class));
+            recipeDTO.setSteps(objectMapper.readValue(steps, List.class));
+            recipeDTO.setCategory(category);
+            recipeDTO.setRating(rating);
+
+            String savedRecipe = recipeService.saveRecipe(recipeDTO, images);
+            return "Recipe saved successfully";
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            e.printStackTrace();
+            return "Error saving recipe: " + e.getMessage();
         }
     }
 
-    @GetMapping("/getAll")
-    public ResponseEntity<List<RecipeDTO>> getAllRecipes() {
+    @GetMapping("/get-all")
+    public List<RecipeDTO> getAllRecipes() {
         try {
-            List<RecipeDTO> recipes = recipeService.getAllRecipes();
-
-            if (recipes.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-
-            return new ResponseEntity<>(recipes, HttpStatus.OK);
+            return recipeService.getAllRecipes();
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            e.printStackTrace();
+            return null;
         }
     }
+
     @PutMapping("/update/{id}")
-    public ResponseEntity<Recipe> updateRecipe(@PathVariable("id") Long id, @RequestBody RecipeDTO recipeDTO) {
+    public ResponseEntity<RecipeDTO> updateRecipe(
+            @PathVariable Long id,
+            @RequestBody RecipeDTO recipeDTO) {
         try {
-            Recipe updatedRecipe = recipeService.updateRecipe(id, recipeDTO);
+            RecipeDTO updatedRecipe = recipeService.updateRecipe(id, recipeDTO);
             if (updatedRecipe != null) {
-                return new ResponseEntity<>(updatedRecipe, HttpStatus.OK);
+                return ResponseEntity.ok(updatedRecipe);
             } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+                return ResponseEntity.notFound().build();
             }
         } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
         }
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<HttpStatus> deleteRecipe(@PathVariable("id") Long id) {
+    public String deleteRecipe(@PathVariable Long id) {
         try {
-            boolean isDeleted = recipeService.deleteRecipe(id);
-            if (isDeleted) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            } else {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
+            recipeService.deleteRecipe(id);
+            return "Recipe deleted successfully";
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            e.printStackTrace();
+            return "Error deleting recipe: " + e.getMessage();
         }
     }
 }
