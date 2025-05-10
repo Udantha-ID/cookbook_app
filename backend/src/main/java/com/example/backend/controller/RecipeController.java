@@ -38,7 +38,7 @@ public class RecipeController {
             recipeDTO.setCategory(category);
             recipeDTO.setRating(rating);
 
-            String savedRecipe = recipeService.saveRecipe(recipeDTO, images);
+            String savedRecipe = String.valueOf(recipeService.saveRecipe(recipeDTO, images));
             return "Recipe saved successfully";
         } catch (Exception e) {
             e.printStackTrace();
