@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { techniqueService } from '../../services/techniqueService';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Navbar  from '../../components/Navbar';
 
 const Techniques = () => {
   const navigate = useNavigate();
@@ -160,6 +161,7 @@ const Techniques = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-indigo-50">
       <div className="container mx-auto px-4 py-24">
+        <Navbar />
         {/* Header */}
         <motion.div 
           className="mb-12 text-center"
@@ -167,7 +169,7 @@ const Techniques = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent py-10">
             COOKING TECHNIQUES
           </h1>
           
