@@ -53,24 +53,9 @@ function HomeFeed() {
   };
 
   // Handle recipe deletion
-  const handleRecipeDeleted = async (recipeId) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8095/api/v1/recipe/${recipeId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      setRecipes(prevRecipes => prevRecipes.filter(recipe => recipe.id !== recipeId));
-    } catch (error) {
-      console.error('Error deleting recipe:', error);
-      if (error.response?.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/auth');
-      } else {
-        setError('Failed to delete recipe. Please try again later.');
-      }
-    }
+  const handleRecipeDeleted = (recipeId) => {
+    // Update the recipes state by filtering out the deleted recipe
+    setRecipes(prevRecipes => prevRecipes.filter(recipe => recipe.id !== recipeId));
   };
 
   if (!isAuthenticated) {
@@ -124,7 +109,8 @@ function HomeFeed() {
                       }),
                       readTime: `${recipe.steps.length * 2} min`,
                       tags: [recipe.category.toLowerCase()],
-                      likes: recipe.likes || 0
+                      likes: recipe.likes || 0,
+                      imageUrls: recipe.imageUrls ? Array.from(recipe.imageUrls) : []
                     }}
                     onDelete={handleRecipeDeleted}
                   />
