@@ -275,11 +275,9 @@ const RecipeForm = () => {
     {/* Recipe Share Card */}
     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
       <div className="flex items-center space-x-3 mb-4">
-        <img 
-          src={userAvatar} 
-          alt="User" 
-          className="w-11 h-11 rounded-full border-2 border-white shadow-sm"
-        />
+        <div className="w-11 h-11 rounded-full overflow-hidden bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg border-2 border-white shadow-sm">
+          J
+        </div>
         <button 
           onClick={openModal}
           className="flex-grow bg-gray-50 hover:bg-gray-100 text-gray-600 text-left p-3 rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300"
@@ -358,7 +356,9 @@ const RecipeForm = () => {
           <div className="p-5 space-y-6">
             {/* User info */}
             <div className="flex items-center space-x-4">
-              <img src={userAvatar} alt="User" className="w-12 h-12 rounded-full border-2 border-white shadow" />
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-tr from-amber-400 to-orange-500 flex items-center justify-center text-white font-bold text-lg border-2 border-white shadow">
+                J
+              </div>
               <div>
                 <p className="font-medium text-gray-800">Jane Doe</p>
                 <select className="text-sm border border-gray-200 rounded-lg px-3 py-1 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
