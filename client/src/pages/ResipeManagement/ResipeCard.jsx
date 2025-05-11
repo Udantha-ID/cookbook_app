@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MoreHorizontal, Heart, MessageSquare, Share2, Bookmark, Clock, User, Trash2 } from 'lucide-react';
 import axios from 'axios';
@@ -16,6 +16,9 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
     { id: 2, user: "Robert Lee", avatar: "/api/placeholder/40/40", content: "I made these yesterday. So good!", time: "1d", likes: 8 }
   ]);
   const [newComment, setNewComment] = useState("");
+  const [editingComment, setEditingComment] = useState(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
 
   // Default values for recipe
   const recipeData = {
@@ -29,6 +32,47 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
     imageUrls: recipe.imageUrls || []
   };
 
+  // Load comments when component mounts
+  useEffect(() => {
+    const loadComments = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          return;
+        }
+
+        const response = await axios.get('http://localhost:8095/api/v1/review/get-all-reviews', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.data) {
+          // Transform review data to match our comment format and filter by recipe ID
+          const transformedComments = response.data
+            .filter(review => review.recipeId === parseInt(recipeData.id))
+            .map(review => ({
+              id: review.id,
+              user: review.name,
+              avatar: "/api/placeholder/40/40",
+              content: review.comment,
+              time: "recent", // You might want to add a timestamp field to ReviewDTO
+              likes: 0
+            }));
+          setComments(transformedComments);
+        }
+      } catch (error) {
+        console.error('Error loading comments:', error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/auth');
+        }
+      }
+    };
+
+    loadComments();
+  }, [recipeData.id]); // Add recipeData.id as a dependency
+
   const handleLike = () => {
     setLikes(isLiked ? likes - 1 : likes + 1);
     setIsLiked(!isLiked);
@@ -39,6 +83,8 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
   };
 
   const handleDelete = async () => {
+    if (isDeleting) return; // Prevent multiple delete attempts
+    
     if (window.confirm('Are you sure you want to delete this recipe?')) {
       try {
         setIsDeleting(true);
@@ -47,11 +93,15 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
           navigate('/auth');
           return;
         }
+        
+        // Make the delete request
         await axios.delete(`http://localhost:8095/api/v1/recipe/delete/${recipe.id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
+
+        // Call onDelete callback to update parent state
         if (onDelete) {
           onDelete(recipe.id);
         }
@@ -65,27 +115,150 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
         }
       } finally {
         setIsDeleting(false);
+        setShowMenu(false); // Close the menu after deletion attempt
       }
     }
   };
 
-  const handleAddComment = (e) => {
+  const handleAddComment = async (e) => {
     e.preventDefault();
     if (newComment.trim() !== "") {
-      setComments([{
-        id: comments.length + 1,
-        user: "You",
-        avatar: "/api/placeholder/40/40",
-        content: newComment,
-        time: "now",
-        likes: 0
-      }, ...comments]);
-      setNewComment("");
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/auth');
+          return;
+        }
+
+        // Create review DTO
+        const reviewDTO = {
+          name: "You",
+          comment: newComment.trim(),
+          rating: 5,
+          recipeId: recipeData.id
+        };
+
+        // Save to backend
+        const response = await axios.post('http://localhost:8095/api/v1/review/save', reviewDTO, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.data) {
+          // Add to local state with animation
+          const newCommentObj = {
+            id: comments.length + 1,
+            user: "You",
+            avatar: "/api/placeholder/40/40",
+            content: newComment,
+            time: "now",
+            likes: 0
+          };
+          setComments([newCommentObj, ...comments]);
+          setNewComment("");
+        }
+      } catch (error) {
+        console.error('Error saving comment:', error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/auth');
+        } else {
+          alert('Failed to save comment. Please try again.');
+        }
+      }
     }
   };
 
-  const handleDeleteComment = (id) => {
-    setComments(comments.filter(comment => comment.id !== id));
+  const handleDeleteComment = async (id) => {
+    try {
+      setDeletingCommentId(id); // Start deletion animation
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/auth');
+        return;
+      }
+
+      await axios.delete(`http://localhost:8095/api/v1/review/delete/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Wait for animation to complete before removing from state
+      setTimeout(() => {
+        setComments(comments.filter(comment => comment.id !== id));
+        setDeletingCommentId(null);
+      }, 300);
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      setDeletingCommentId(null);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+      } else {
+        alert('Failed to delete comment. Please try again.');
+      }
+    }
+  };
+
+  const handleEditComment = (comment) => {
+    setEditingComment(comment.id);
+    setEditCommentText(comment.content);
+  };
+
+  const handleUpdateComment = async (e) => {
+    e.preventDefault();
+    if (!editCommentText.trim()) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/auth');
+        return;
+      }
+
+      // Create review DTO for update
+      const reviewDTO = {
+        id: editingComment,
+        name: "You", // This should be replaced with actual user name from auth context
+        comment: editCommentText.trim(),
+        rating: 5, // Default rating for comments
+        recipeId: recipeData.id
+      };
+
+      // Update in backend
+      const response = await axios.put(`http://localhost:8095/api/v1/review/update/${editingComment}`, reviewDTO, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.data) {
+        // Update local state
+        setComments(comments.map(comment => 
+          comment.id === editingComment 
+            ? { ...comment, content: editCommentText.trim() }
+            : comment
+        ));
+        setEditingComment(null);
+        setEditCommentText("");
+      }
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/auth');
+      } else {
+        alert('Failed to update comment. Please try again.');
+      }
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingComment(null);
+    setEditCommentText("");
   };
 
   const navigateToDetail = (e) => {
@@ -93,32 +266,24 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
     navigate(`/recipe/${recipeData.id}`);
   };
 
-  // Function to get correct image URL
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) {
       console.log('No image URL provided');
-      return null;
+      return '/placeholder-image.jpg'; // Provide a fallback
     }
-    
-    console.log('Processing image URL:', imageUrl);
     
     // If it's already a full URL, return as is
     if (imageUrl.startsWith('http')) {
-      console.log('Using full URL:', imageUrl);
       return imageUrl;
     }
     
-    // If it's a relative path starting with /uploads, add the base URL
-    if (imageUrl.startsWith('/uploads')) {
-      const fullUrl = `http://localhost:8095${imageUrl}`;
-      console.log('Created full URL:', fullUrl);
-      return fullUrl;
+    // If it's a relative path, add the base URL
+    if (imageUrl.startsWith('/')) {
+      return `http://localhost:8095${imageUrl}`;
     }
     
-    // If it's just a filename, assume it's in uploads directory
-    const fullUrl = `http://localhost:8095/uploads/${imageUrl}`;
-    console.log('Created full URL from filename:', fullUrl);
-    return fullUrl;
+    // Default case - assume it's a filename in uploads directory
+    return `http://localhost:8095/uploads/${imageUrl}`;
   };
 
   // Function to handle image error
@@ -162,32 +327,23 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
         </div>
         <div className="relative">
           <button 
-            className="p-2 rounded-full hover:bg-white/50 transition-colors"
             onClick={() => setShowMenu(!showMenu)}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           >
             <MoreHorizontal size={20} className="text-gray-600" />
           </button>
-          
           {showMenu && (
-            <div className="absolute right-0 top-12 w-56 bg-white/90 backdrop-blur-sm rounded-xl shadow-xl z-10 border border-gray-100">
-              <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50/50 transition-colors">
-                <Bookmark size={18} className="mr-3 text-gray-600" />
-                Save to collection
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-10">
+              <button 
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className={`w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center ${
+                  isDeleting ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <Trash2 size={16} className="mr-2" />
+                {isDeleting ? 'Deleting...' : 'Delete Recipe'}
               </button>
-              <button className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50/50 transition-colors">
-                <Share2 size={18} className="mr-3 text-gray-600" />
-                Share recipe
-              </button>
-              <div className="border-t border-gray-100">
-                <button
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="flex items-center w-full px-4 py-3 text-left text-sm hover:bg-gray-50/50 text-red-500 transition-colors"
-                >
-                  <Trash2 size={18} className="mr-3" />
-                  <span>{isDeleting ? 'Deleting...' : 'Delete Recipe'}</span>
-                </button>
-              </div>
             </div>
           )}
         </div>
@@ -214,6 +370,7 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             {recipeData.imageUrls.map((imageUrl, index) => {
               const finalUrl = getImageUrl(imageUrl);
+              console.log(`Rendering image ${index}:`, finalUrl);
               
               return (
                 <div key={index} className="relative group" style={{ paddingTop: '75%' }}> {/* 4:3 aspect ratio */}
@@ -221,6 +378,7 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
                     <img 
                       src={finalUrl}
                       alt={`Recipe ${index + 1}`}
+                      data-original-url={imageUrl}
                       className="absolute inset-0 w-full h-full object-cover rounded-lg"
                       onError={handleImageError}
                       onLoad={() => console.log(`Image ${index} loaded successfully:`, finalUrl)}
@@ -313,7 +471,14 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
             {/* Comment list */}
             <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
               {comments.map((comment) => (
-                <div key={comment.id} className="flex group">
+                <div 
+                  key={comment.id} 
+                  className={`flex group transition-all duration-300 ease-in-out ${
+                    deletingCommentId === comment.id 
+                      ? 'opacity-0 transform translate-x-4' 
+                      : 'opacity-100 transform translate-x-0'
+                  }`}
+                >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-orange-500 overflow-hidden ring-2 ring-white shadow-sm flex-shrink-0">
                     <img 
                       src={comment.avatar}
@@ -322,26 +487,63 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
                     />
                   </div>
                   <div className="ml-3 flex-1 min-w-0">
-                    <div className="bg-white px-4 py-3 rounded-xl shadow-sm">
-                      <div className="flex items-center">
-                        <span className="font-medium text-sm text-gray-800">{comment.user}</span>
-                        <span className="mx-2 text-gray-400">·</span>
-                        <span className="text-xs text-gray-500">{comment.time}</span>
-                      </div>
-                      <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-500 mt-2 ml-4 space-x-4">
-                      <button className="hover:text-gray-700 transition-colors">Like</button>
-                      <button className="hover:text-gray-700 transition-colors">Reply</button>
-                      {comment.user === "You" && (
-                        <button 
-                          className="text-red-500 hover:text-red-700 transition-colors"
-                          onClick={() => handleDeleteComment(comment.id)}
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
+                    {editingComment === comment.id ? (
+                      <form onSubmit={handleUpdateComment} className="bg-white px-4 py-3 rounded-xl shadow-sm animate-fadeIn">
+                        <input
+                          type="text"
+                          value={editCommentText}
+                          onChange={(e) => setEditCommentText(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300"
+                          placeholder="Edit your comment..."
+                        />
+                        <div className="flex justify-end space-x-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-3 py-1 text-sm bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div className="bg-white px-4 py-3 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md">
+                          <div className="flex items-center">
+                            <span className="font-medium text-sm text-gray-800">{comment.user}</span>
+                            <span className="mx-2 text-gray-400">·</span>
+                            <span className="text-xs text-gray-500">{comment.time}</span>
+                          </div>
+                          <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500 mt-2 ml-4 space-x-4">
+                          <button className="hover:text-gray-700 transition-colors">Like</button>
+                          <button className="hover:text-gray-700 transition-colors">Reply</button>
+                          {comment.user === "You" && (
+                            <>
+                              <button 
+                                className="text-blue-500 hover:text-blue-700 transition-colors"
+                                onClick={() => handleEditComment(comment)}
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                className="text-red-500 hover:text-red-700 transition-colors"
+                                onClick={() => handleDeleteComment(comment.id)}
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -349,6 +551,24 @@ export default function RecipeCard({ recipe = {}, onDelete }) {
           </div>
         )}
       </div>
+
+      {/* Add these styles to your CSS */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
