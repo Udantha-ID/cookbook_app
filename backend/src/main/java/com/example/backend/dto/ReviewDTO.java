@@ -6,13 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class ReviewDTO {
-
     private Long id;
     private String name;
     private String comment;
     private Integer rating;
+    private Long recipeId;
 }
