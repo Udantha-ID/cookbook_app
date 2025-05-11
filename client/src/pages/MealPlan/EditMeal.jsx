@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, X, Check, Utensils, ArrowLeft, Clock, Sparkles } from 'lucide-react';
+import { Calendar, Plus, X, Check, Utensils, ArrowLeft, Clock, Sparkles, Trash2, Save } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import mealService from '../../services/mealService';
 
@@ -138,7 +138,7 @@ const EditMeal = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md">
             <div className="flex items-center">
@@ -154,33 +154,50 @@ const EditMeal = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">
+      <div className="max-w-5xl mx-auto">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-amber-100">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
               <button 
                 onClick={() => navigate('/meal-planner')}
-                className="p-2 text-indigo-500 hover:text-indigo-600 transition-colors duration-200"
+                className="p-2 text-amber-500 hover:text-amber-600 transition-colors duration-200"
               >
                 <ArrowLeft size={24} />
               </button>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
-                  <Utensils className="mr-2" size={24} />
+                <h1 className="text-2xl font-bold text-amber-800 flex items-center">
+                  <Utensils className="mr-2 text-amber-600" size={24} />
                   Edit Meal Plan
                 </h1>
-                <p className="text-sm text-indigo-600/70 mt-1">
-                  Update your meal plan details and schedule
+                <p className="text-sm text-amber-600/70 mt-1">
+                  {formData.title || "Loading..."}
                 </p>
               </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => navigate('/meal-planner')}
+                className="group relative px-4 py-2 bg-red-100 text-red-600 rounded-lg flex items-center hover:bg-red-200 transition-colors duration-200"
+              >
+                <Trash2 className="mr-2" size={18} />
+                Delete Plan
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="group relative px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg flex items-center shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                <Save className="mr-2" size={18} />
+                Save Changes
+              </button>
             </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-indigo-700">
+                <label className="block text-sm font-medium text-amber-700">
                   Plan Title *
                 </label>
                 <input
@@ -191,8 +208,8 @@ const EditMeal = () => {
                   className={`w-full px-4 py-2 rounded-lg border ${
                     errors.title 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500'
-                  } bg-white text-indigo-900 placeholder-indigo-300`}
+                      : 'border-amber-200 focus:ring-amber-500 focus:border-amber-500'
+                  } bg-white text-amber-900 placeholder-amber-300`}
                 />
                 {errors.title && (
                   <p className="text-sm text-red-500">{errors.title}</p>
@@ -200,7 +217,7 @@ const EditMeal = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-indigo-700">
+                <label className="block text-sm font-medium text-amber-700">
                   Description
                 </label>
                 <input
@@ -208,12 +225,12 @@ const EditMeal = () => {
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   placeholder="Enter meal plan description"
-                  className="w-full px-4 py-2 rounded-lg border border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-indigo-900 placeholder-indigo-300"
+                  className="w-full px-4 py-2 rounded-lg border border-amber-200 focus:ring-amber-500 focus:border-amber-500 bg-white text-amber-900 placeholder-amber-300"
                 />
               </div>
 
               <div className="md:col-span-2 space-y-2">
-                <label className="block text-sm font-medium text-indigo-700">
+                <label className="block text-sm font-medium text-amber-700">
                   Select Week *
                 </label>
                 <div className="flex items-center space-x-4">
@@ -225,10 +242,10 @@ const EditMeal = () => {
                     className={`w-full px-4 py-2 rounded-lg border ${
                       errors.startDate 
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500'
-                    } bg-white text-indigo-900`}
+                        : 'border-amber-200 focus:ring-amber-500 focus:border-amber-500'
+                    } bg-white text-amber-900`}
                   />
-                  <div className="flex items-center text-sm text-indigo-600/70">
+                  <div className="flex items-center text-sm text-amber-600/70">
                     <Calendar className="mr-2" size={16} />
                     <span>
                       {formData.startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} - 
@@ -243,24 +260,24 @@ const EditMeal = () => {
             </div>
 
             <div className="space-y-6">
-              <h2 className="text-xl font-semibold text-indigo-900 flex items-center">
-                <Clock className="mr-2" size={20} />
+              <h2 className="text-xl font-semibold text-amber-800 flex items-center">
+                <Clock className="mr-2 text-amber-600" size={20} />
                 Daily Meals
               </h2>
               
               {generateDateRange().map((date, index) => (
                 <div 
                   key={date.toISOString()} 
-                  className="bg-indigo-50/50 rounded-lg p-6 space-y-4 border border-indigo-100"
+                  className="bg-amber-50/50 rounded-lg p-6 space-y-4 border border-amber-100"
                 >
-                  <h3 className="text-lg font-medium text-indigo-900">
+                  <h3 className="text-lg font-medium text-amber-800">
                     {date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {['Breakfast', 'Lunch', 'Dinner'].map(mealType => (
                       <div key={mealType} className="space-y-2">
-                        <label className="block text-sm font-medium text-indigo-700">
+                        <label className="block text-sm font-medium text-amber-700">
                           {mealType}
                         </label>
                         <input
@@ -268,7 +285,7 @@ const EditMeal = () => {
                           value={formData.meals[`${date.toISOString().split('T')[0]}-${mealType}`] || ''}
                           onChange={(e) => handleMealChange(date, mealType, e.target.value)}
                           placeholder={`Enter ${mealType.toLowerCase()} recipe`}
-                          className="w-full px-4 py-2 rounded-lg border border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-indigo-900 placeholder-indigo-300"
+                          className="w-full px-4 py-2 rounded-lg border border-amber-200 focus:ring-amber-500 focus:border-amber-500 bg-white text-amber-900 placeholder-amber-300"
                         />
                       </div>
                     ))}
@@ -277,20 +294,19 @@ const EditMeal = () => {
               ))}
             </div>
 
-            <div className="flex justify-end space-x-4 pt-6 border-t border-indigo-100">
+            <div className="flex justify-end space-x-4 pt-6 border-t border-amber-100">
               <button
                 type="button"
                 onClick={() => navigate('/meal-planner')}
-                className="px-6 py-2 border border-indigo-200 rounded-lg text-indigo-700 hover:bg-indigo-50 transition-colors duration-200"
+                className="px-6 py-2 border border-amber-200 rounded-lg text-amber-700 hover:bg-amber-50 transition-colors duration-200"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg flex items-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                className="group relative px-6 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg flex items-center shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
