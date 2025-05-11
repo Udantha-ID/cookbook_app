@@ -104,23 +104,23 @@ const AddMeal = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-indigo-100">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-amber-100">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
               <button 
                 onClick={() => navigate('/meal-planner')}
-                className="p-2 text-indigo-500 hover:text-indigo-600 transition-colors duration-200"
+                className="p-2 text-amber-500 hover:text-amber-600 transition-colors duration-200"
               >
                 <ArrowLeft size={24} />
               </button>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
-                  <Utensils className="mr-2" size={24} />
+                <h1 className="text-2xl font-bold text-amber-800 flex items-center">
+                  <Utensils className="mr-2 text-amber-600" size={24} />
                   Create New Meal Plan
                 </h1>
-                <p className="text-sm text-indigo-600/70 mt-1">
+                <p className="text-sm text-amber-600/70 mt-1">
                   Plan your meals for the upcoming week
                 </p>
               </div>
@@ -130,7 +130,7 @@ const AddMeal = () => {
           <form onSubmit={handleSubmit} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-indigo-700">
+                <label className="block text-sm font-medium text-amber-700">
                   Plan Title *
                 </label>
                 <input
@@ -141,8 +141,8 @@ const AddMeal = () => {
                   className={`w-full px-4 py-2 rounded-lg border ${
                     errors.title 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500'
-                  } bg-white text-indigo-900 placeholder-indigo-300`}
+                      : 'border-amber-200 focus:ring-amber-500 focus:border-amber-500'
+                  } bg-white text-amber-900 placeholder-amber-300`}
                 />
                 {errors.title && (
                   <p className="text-sm text-red-500">{errors.title}</p>
@@ -150,7 +150,7 @@ const AddMeal = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-indigo-700">
+                <label className="block text-sm font-medium text-amber-700">
                   Diet Type *
                 </label>
                 <select
@@ -159,8 +159,8 @@ const AddMeal = () => {
                   className={`w-full px-4 py-2 rounded-lg border ${
                     errors.dietType 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500'
-                  } bg-white text-indigo-900`}
+                      : 'border-amber-200 focus:ring-amber-500 focus:border-amber-500'
+                  } bg-white text-amber-900`}
                 >
                   <option value="">Select diet type</option>
                   {dietTypes.map(type => (
@@ -173,7 +173,7 @@ const AddMeal = () => {
               </div>
 
               <div className="md:col-span-2 space-y-2">
-                <label className="block text-sm font-medium text-indigo-700">
+                <label className="block text-sm font-medium text-amber-700">
                   Select Week *
                 </label>
                 <div className="flex items-center space-x-4">
@@ -185,10 +185,10 @@ const AddMeal = () => {
                     className={`w-full px-4 py-2 rounded-lg border ${
                       errors.startDate 
                         ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-indigo-200 focus:ring-indigo-500 focus:border-indigo-500'
-                    } bg-white text-indigo-900`}
+                        : 'border-amber-200 focus:ring-amber-500 focus:border-amber-500'
+                    } bg-white text-amber-900`}
                   />
-                  <div className="flex items-center text-sm text-indigo-600/70">
+                  <div className="flex items-center text-sm text-amber-600/70">
                     <Calendar className="mr-2" size={16} />
                     <span>
                       {formData.startDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} - 
@@ -202,7 +202,7 @@ const AddMeal = () => {
               </div>
 
               <div className="md:col-span-2 space-y-2">
-                <label className="block text-sm font-medium text-indigo-700">
+                <label className="block text-sm font-medium text-amber-700">
                   Daily Calories Target
                 </label>
                 <div className="flex items-center space-x-4">
@@ -267,10 +267,8 @@ const AddMeal = () => {
               </button>
               <button
                 type="submit"
-                className="group relative px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-lg flex items-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 overflow-hidden"
+                className="mt-8 w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
               >
-                <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
-                <Check className="mr-2" size={18} />
                 Create Meal Plan
               </button>
             </div>
